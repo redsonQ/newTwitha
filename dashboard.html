@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TWITHA • My Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+    <style>
+        :root { --primary: #7c3aed; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: #0f0a1f; color: #e2e8f0; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        .heading-font { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 600; letter-spacing: -0.025em; }
+        .glass { background: rgba(30, 20, 60, 0.95); border: 1px solid rgba(124, 58, 237, 0.2); backdrop-filter: blur(12px); }
+        .section { display: none; }
+        .section.active { display: block; }
+        .bottom-dock { background: rgba(30, 20, 60, 0.98); border-top: 1px solid rgba(124, 58, 237, 0.2); }
+        .dock-item { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); color: #a5b4fc; }
+        .dock-item.active { color: #c026ff; background: rgba(124, 58, 237, 0.12); border-radius: 9999px; }
+        .dock-item:hover { color: #ddd6fe; }
+        .stat-card { transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s; }
+        .stat-card:hover { transform: translateY(-3px); }
+        .status-pill { font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 9999px; }
+        .transaction-row { transition: background-color 0.1s; }
+        .transaction-row:hover { background-color: rgba(124, 58, 237, 0.08); }
+        .modal { animation: modalPop 0.2s ease forwards; max-height: 92vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        @keyframes modalPop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #7c3aed #1e143c; }
+        .table-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+        .table-scroll::-webkit-scrollbar-thumb { background-color: #7c3aed; border-radius: 9999px; }
+        .table-scroll::-webkit-scrollbar-track { background: #1e143c; }
+        .table-container { max-height: 580px; overflow-y: auto; -webkit-overflow-scrolling: touch; border-radius: 16px; }
+        .table-container::-webkit-scrollbar { width: 6px; }
+        .table-container::-webkit-scrollbar-thumb { background-color: #7c3aed; border-radius: 9999px; }
+        .table-container::-webkit-scrollbar-track { background: #1e143c; }
+        .table-full-history { max-height: 720px; }
+        .input-dash { width: 100%; background: #2a1f4a; border: 1px solid #4c1d95; padding: 0.75rem 1.25rem; border-radius: 1rem; font-size: 0.875rem; color: #e2e8f0; outline: none; transition: border-color 0.2s; }
+        .input-dash:focus { border-color: #7c3aed; }
+        .input-dash::placeholder { color: #6d28d9; }
+        #notif-panel { transition: all 0.25s ease; }
+        .notif-item { border-left: 3px solid transparent; transition: all 0.2s; }
+        .notif-item.unread { border-left-color: #7c3aed; background: rgba(124,58,237,0.08); }
+        .notif-item:hover { background: rgba(124,58,237,0.12); }
+        .upload-zone { border: 2px dashed #4c1d95; border-radius: 1rem; padding: 1.25rem; text-align: center; cursor: pointer; transition: border-color 0.2s; }
+        .upload-zone:hover, .upload-zone.drag-over { border-color: #7c3aed; background: rgba(124,58,237,0.05); }
+        .upload-zone.file-loaded { border-color: #10b981; background: rgba(16,185,129,0.05); }
+        .spinner { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-overlay { position: fixed; inset: 0; background: #0f0a1f; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
+
+        /* ========== CSS GRID LAYOUT IMPROVEMENTS ========== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+        }
+        @media (min-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .quick-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+        }
+        @media (min-width: 768px) {
+            .quick-actions-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        /* Contribution tracker */
+        .plan-tracker-bar { height: 8px; border-radius: 9999px; background: #2a1f4a; overflow: hidden; }
+        .plan-tracker-fill { height: 100%; border-radius: 9999px; background: linear-gradient(90deg, #7c3aed, #a855f7); transition: width 0.6s ease; }
+    </style>
+</head>
+<body class="pb-20">
+
+    <!-- LOADING OVERLAY -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="w-12 h-12 border-4 border-purple-800 border-t-violet-400 rounded-full animate-spin mb-4"></div>
+        <div class="text-purple-300 text-sm">Loading your dashboard...</div>
+    </div>
+
+    <!-- LOGOUT CONFIRM MODAL -->
+    <div id="logout-modal" class="hidden fixed inset-0 bg-black/80 z-[200] flex items-center justify-center">
+        <div class="glass w-full max-w-sm mx-4 rounded-3xl p-8 border border-purple-700 modal text-center">
+            <div class="w-16 h-16 bg-red-900/40 rounded-full flex items-center justify-center mx-auto mb-5">
+                <i class="fas fa-sign-out-alt text-3xl text-red-400"></i>
+            </div>
+            <div class="font-bold text-xl mb-2 heading-font">Log Out</div>
+            <p class="text-purple-300 text-sm mb-7">Are you sure you want to log out of your TWITHA account?</p>
+            <div class="flex gap-x-3">
+                <button onclick="document.getElementById('logout-modal').classList.add('hidden')" class="flex-1 py-3 rounded-2xl border border-purple-700 font-semibold hover:bg-purple-900/30 transition">Cancel</button>
+                <button onclick="confirmLogout()" class="flex-1 py-3 rounded-2xl bg-red-600 hover:bg-red-700 font-semibold transition">Log Out</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOP NAV -->
+    <nav class="bg-[#1e143c] border-b border-purple-900/30 sticky top-0 z-50">
+        <div class="max-w-screen-xl mx-auto px-5 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-x-3">
+                <!-- No link to homepage — prevent accidental redirect -->
+                <div class="flex items-center gap-x-2">
+                    <img src="roundlogo.jpg" class="w-9 h-9 rounded-2xl object-cover border border-purple-700 shadow-inner" alt="Twitha Logo" onerror="this.outerHTML='<div class=\'w-9 h-9 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-500 flex items-center justify-center shadow-inner\'><span class=\'text-white font-bold text-xl heading-font\'>T</span></div>'">
+                    <span class="text-2xl font-bold tracking-tighter heading-font hidden sm:block">TWITHA</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-x-2 sm:gap-x-3">
+                <!-- Notification Bell -->
+                <div class="relative">
+                    <button onclick="toggleNotifPanel()" id="notif-btn" class="relative w-10 h-10 text-purple-300 hover:text-white hover:bg-purple-900/30 rounded-2xl flex items-center justify-center transition-colors">
+                        <i class="fas fa-bell text-lg"></i>
+                        <span id="notif-badge" class="hidden absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
+                    </button>
+                    <div id="notif-panel" class="hidden absolute right-0 top-12 w-80 sm:w-96 glass rounded-3xl shadow-2xl border border-purple-700 z-[100]">
+                        <div class="flex items-center justify-between px-5 py-4 border-b border-purple-800">
+                            <div class="font-semibold">Notifications</div>
+                            <button onclick="markAllNotifsRead()" class="text-xs text-purple-400 hover:text-purple-300">Mark all read</button>
+                        </div>
+                        <div id="notif-list" class="max-h-80 overflow-y-auto divide-y divide-purple-900/30">
+                            <div class="px-5 py-8 text-center text-purple-400 text-sm">No notifications yet</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clickable User Profile Avatar -->
+                <button onclick="showProfileModal()" class="flex items-center gap-x-3 cursor-pointer hover:opacity-90 transition">
+                    <div class="text-right hidden sm:block">
+                        <div class="font-semibold text-sm" id="top-user-name">Loading...</div>
+                        <div class="text-[10px] text-purple-300 -mt-0.5">Member</div>
+                    </div>
+                    <div id="user-avatar" class="w-9 h-9 bg-gradient-to-br from-violet-600 to-purple-500 rounded-2xl flex items-center justify-center text-white font-semibold text-sm shadow-inner ring-2 ring-[#1e143c] hover:ring-violet-400 transition-all">
+                        --
+                    </div>
+                </button>
+
+                <!-- Logout -->
+                <button onclick="showLogoutModal()" class="flex items-center justify-center w-9 h-9 text-purple-300 hover:text-red-400 hover:bg-red-900/20 rounded-2xl transition-colors" title="Logout">
+                    <i class="fas fa-sign-out-alt text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- KYC Alert Banner -->
+    <div id="kyc-alert" onclick="showSection('activity'); showKYCModal();" class="bg-gradient-to-r from-orange-600 to-red-600 text-white px-5 py-3.5 text-sm cursor-pointer border-b border-orange-700/50">
+        <div class="max-w-screen-xl mx-auto flex items-center gap-x-3">
+            <i class="fas fa-exclamation-circle text-lg flex-shrink-0"></i>
+            <div class="flex-1 text-sm leading-snug"><span class="font-bold">KYC Required:</span> Pay the ₦500 convenience fee and upload your ID documents to unlock loans &amp; full features.</div>
+            <button onclick="event.stopImmediatePropagation(); showKYCModal();" class="flex-shrink-0 text-xs font-bold bg-white/20 hover:bg-white/30 px-4 py-1.5 rounded-2xl whitespace-nowrap">COMPLETE KYC</button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="max-w-screen-xl mx-auto px-4 sm:px-5 pt-5 sm:pt-6 pb-24">
+
+        <!-- ========== HOME ========== -->
+        <div id="section-home" class="section active">
+            <div class="mb-7">
+                <h1 class="text-3xl font-bold tracking-[-0.02em] heading-font">Good day, <span id="greeting-name">there</span> 👋</h1>
+                <p class="text-purple-200 mt-1.5 text-[15px]">Here's your financial overview</p>
+            </div>
+
+            <!-- Balance Hero -->
+            <div class="glass rounded-3xl p-7 sm:p-8 mb-7">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-y-4">
+                    <div>
+                        <div class="text-purple-200 text-xs tracking-[1.5px] font-medium">AVAILABLE BALANCE</div>
+                        <div id="main-balance" class="text-5xl sm:text-6xl font-bold tabular-nums mt-1 tracking-tighter heading-font">₦0.00</div>
+                    </div>
+                    <div class="w-12 h-12 sm:w-14 sm:h-14 bg-violet-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-wallet text-3xl text-violet-400"></i>
+                    </div>
+                </div>
+                <div class="mt-6 grid grid-cols-2 gap-3">
+                    <button onclick="showSection('deposit')" class="py-3.5 bg-violet-600 hover:bg-violet-700 transition-all text-white font-bold rounded-2xl text-sm flex items-center justify-center gap-x-2">
+                        <i class="fas fa-plus"></i><span>FUND WALLET</span>
+                    </button>
+                    <button onclick="showSection('wallet')" class="py-3.5 border border-purple-700 hover:bg-purple-900/30 transition-all font-bold rounded-2xl text-sm flex items-center justify-center gap-x-2">
+                        <i class="fas fa-hand-holding-usd"></i><span>WITHDRAW</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid mb-8">
+                <div class="glass p-4 sm:p-5 rounded-3xl stat-card">
+                    <div class="flex justify-between items-start">
+                        <div><div class="text-[10px] text-purple-200 tracking-[1px] font-medium">TOTAL DEPOSITED</div><div id="total-deposit" class="text-2xl md:text-3xl font-bold mt-1 tabular-nums tracking-tighter heading-font">₦0</div></div>
+                        <i class="fas fa-arrow-down text-2xl text-emerald-400 flex-shrink-0"></i>
+                    </div>
+                </div>
+                <div class="glass p-4 sm:p-5 rounded-3xl stat-card">
+                    <div class="flex justify-between items-start">
+                        <div><div class="text-[10px] text-purple-200 tracking-[1px] font-medium">TOTAL WITHDRAWN</div><div id="total-withdrawn" class="text-2xl md:text-3xl font-bold mt-1 tabular-nums tracking-tighter heading-font">₦0</div></div>
+                        <i class="fas fa-arrow-up text-2xl text-rose-400 flex-shrink-0"></i>
+                    </div>
+                </div>
+                <div class="glass p-4 sm:p-5 rounded-3xl stat-card">
+                    <div class="flex justify-between items-start">
+                        <div><div class="text-[10px] text-purple-200 tracking-[1px] font-medium">TOTAL SAVINGS</div><div id="total-savings" class="text-2xl md:text-3xl font-bold mt-1 tabular-nums tracking-tighter heading-font">₦0</div></div>
+                        <i class="fas fa-piggy-bank text-2xl text-amber-400 flex-shrink-0"></i>
+                    </div>
+                </div>
+                <div class="glass p-4 sm:p-5 rounded-3xl stat-card">
+                    <div class="flex justify-between items-start">
+                        <div><div class="text-[10px] text-purple-200 tracking-[1px] font-medium">ACTIVE PLANS</div><div id="active-plans-count" class="text-2xl md:text-3xl font-bold mt-1 tabular-nums tracking-tighter heading-font">0</div></div>
+                        <i class="fas fa-tasks text-2xl text-sky-400 flex-shrink-0"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contribution Chart -->
+            <div class="glass rounded-3xl p-6 mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <div class="font-semibold text-lg heading-font">Contribution Growth</div>
+                        <div class="text-xs text-emerald-400 mt-0.5">Based on your transaction history</div>
+                    </div>
+                    <div class="px-3 py-1 text-xs bg-emerald-900/60 text-emerald-300 rounded-full font-medium">6 MONTHS</div>
+                </div>
+                <div class="h-64"><canvas id="growthChart"></canvas></div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="mb-8">
+                <div class="font-semibold mb-3 px-1 text-sm tracking-wide text-purple-200">QUICK ACTIONS</div>
+                <div class="quick-actions-grid">
+                    <button onclick="showSection('deposit')" class="glass p-4 sm:p-5 rounded-2xl flex flex-col items-center gap-y-2 hover:border-violet-500 border border-transparent transition-all active:scale-[0.985]">
+                        <div class="w-10 h-10 bg-violet-500/20 rounded-2xl flex items-center justify-center"><i class="fas fa-plus text-lg text-violet-400"></i></div>
+                        <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Deposit Funds</span>
+                    </button>
+                    <button onclick="showSection('wallet')" class="glass p-4 sm:p-5 rounded-2xl flex flex-col items-center gap-y-2 hover:border-violet-500 border border-transparent transition-all active:scale-[0.985]">
+                        <div class="w-10 h-10 bg-rose-500/20 rounded-2xl flex items-center justify-center"><i class="fas fa-hand-holding-usd text-lg text-rose-400"></i></div>
+                        <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Withdraw</span>
+                    </button>
+                    <button onclick="showSection('plans')" class="glass p-4 sm:p-5 rounded-2xl flex flex-col items-center gap-y-2 hover:border-violet-500 border border-transparent transition-all active:scale-[0.985]">
+                        <div class="w-10 h-10 bg-sky-500/20 rounded-2xl flex items-center justify-center"><i class="fas fa-tasks text-lg text-sky-400"></i></div>
+                        <span class="text-xs sm:text-sm font-semibold text-center leading-tight">New Plan</span>
+                    </button>
+                    <button onclick="showLoanModal()" class="glass p-4 sm:p-5 rounded-2xl flex flex-col items-center gap-y-2 hover:border-violet-500 border border-transparent transition-all active:scale-[0.985]">
+                        <div class="w-10 h-10 bg-amber-500/20 rounded-2xl flex items-center justify-center"><i class="fas fa-handshake text-lg text-amber-400"></i></div>
+                        <span class="text-xs sm:text-sm font-semibold text-center leading-tight">Apply for Loan</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div>
+                <div class="flex justify-between items-center mb-3 px-1">
+                    <div class="font-semibold text-sm tracking-wide text-purple-200">RECENT TRANSACTIONS</div>
+                    <button onclick="showSection('activity')" class="text-xs text-violet-400 flex items-center gap-x-1 font-medium hover:text-violet-300">VIEW ALL <i class="fas fa-arrow-right text-xs ml-0.5"></i></button>
+                </div>
+                <div class="glass rounded-3xl overflow-hidden border border-purple-900/30 table-scroll table-container" style="max-height:320px;">
+                    <table class="min-w-full text-sm">
+                        <tbody id="recent-transactions-tbody" class="divide-y divide-purple-900/30">
+                            <tr><td colspan="3" class="px-5 py-8 text-center text-purple-400 text-sm">No transactions yet</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== MY PLANS ========== -->
+        <div id="section-plans" class="section">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-3xl font-bold tracking-tight heading-font">My Contribution Plans</h2>
+                    <p class="text-purple-300">Build your savings goals consistently</p>
+                </div>
+                <button onclick="showCreatePlanModal()" class="px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-2xl flex items-center gap-x-2 text-sm">
+                    <i class="fas fa-plus"></i><span>NEW PLAN</span>
+                </button>
+            </div>
+            <div id="plans-container" class="plans-grid"></div>
+        </div>
+
+        <!-- ========== DEPOSIT ========== -->
+        <div id="section-deposit" class="section max-w-2xl">
+            <h2 class="text-3xl font-bold tracking-tight mb-1 heading-font">Manual Deposit</h2>
+            <p class="text-purple-300 mb-6">Transfer to the account below and send proof via WhatsApp.</p>
+            <div class="glass rounded-3xl p-5 sm:p-7 mb-6">
+                <div class="uppercase text-xs tracking-[2px] text-purple-300 mb-4 font-medium">BANK TRANSFER DETAILS</div>
+                <div class="space-y-5">
+                    <div class="flex justify-between items-center border-b border-purple-900/40 pb-4"><div class="text-purple-300">Account Name</div><div class="font-semibold text-lg">Twitha Ventures</div></div>
+                    <div class="flex justify-between items-center border-b border-purple-900/40 pb-4"><div class="text-purple-300">Account Number</div><div class="flex items-center gap-x-3"><span class="font-mono font-bold text-2xl tracking-wider">1025783406</span><button onclick="copyToClipboard('1025783406')" class="text-violet-400 hover:text-violet-300 p-2"><i class="fas fa-copy"></i></button></div></div>
+                    <div class="flex justify-between items-center"><div class="text-purple-300">Bank</div><div class="font-semibold">United Bank of Africa (UBA)</div></div>
+                </div>
+            </div>
+            <div class="mb-6 p-4 bg-amber-900/20 border border-amber-700/50 rounded-2xl text-sm text-amber-200"><i class="fas fa-info-circle mr-2"></i> After transfer, click below to send your payment proof. Include your <strong>name and email</strong> in the WhatsApp message.</div>
+            <button onclick="uploadProofViaWhatsApp()" class="w-full py-4 bg-[#25D366] hover:bg-[#128C7E] transition-all text-white font-bold rounded-3xl flex items-center justify-center gap-x-3 text-base shadow-lg shadow-green-900/30">
+                <i class="fab fa-whatsapp text-2xl"></i><span>SEND PROOF VIA WHATSAPP</span>
+            </button>
+            <p class="text-center text-xs text-purple-300 mt-2">Opens WhatsApp with pre-filled message</p>
+            <div class="mt-10">
+                <div class="font-semibold mb-3 heading-font">Recent Deposits</div>
+                <div class="glass rounded-3xl overflow-hidden border border-purple-900/30 table-scroll table-container" style="max-height:320px;">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-[#1e143c]"><tr class="text-xs text-purple-200"><th class="px-5 py-4 text-left font-medium">AMOUNT / DATE</th><th class="px-5 py-4 text-left font-medium">STATUS</th></tr></thead>
+                        <tbody id="recent-deposits-tbody" class="divide-y divide-purple-900/30"><tr><td colspan="2" class="px-5 py-8 text-center text-purple-400 text-xs">No deposits recorded yet</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== WALLET ========== -->
+        <div id="section-wallet" class="section max-w-2xl">
+            <h2 class="text-3xl font-bold tracking-tight mb-6 heading-font">My Wallet</h2>
+            <div class="glass rounded-3xl p-6 sm:p-8 mb-6 text-center">
+                <div class="text-purple-200 text-xs tracking-widest">AVAILABLE FOR WITHDRAWAL</div>
+                <div id="wallet-balance" class="text-5xl sm:text-6xl font-bold tabular-nums mt-1 tracking-tighter break-all heading-font">₦0.00</div>
+            </div>
+            <div class="glass rounded-3xl p-7 mb-8">
+                <div class="font-semibold mb-4 flex items-center gap-x-2 heading-font"><i class="fas fa-hand-holding-usd text-rose-400"></i><span>Request Withdrawal</span></div>
+                <form id="withdraw-form" onsubmit="requestWithdrawal(event)">
+                    <div class="mb-5"><label class="text-xs text-purple-300 tracking-wider block mb-1.5">AMOUNT (₦)</label><input type="number" id="withdraw-amount" required min="5000" step="500" class="input-dash text-3xl font-semibold" placeholder="5000"><div class="text-xs text-purple-400 mt-1.5">Min: ₦5,000 • Available: <span id="available-balance-wallet">₦0.00</span></div></div>
+                    <div class="mb-5"><label class="text-xs text-purple-300 tracking-wider block mb-1.5">BANK ACCOUNT</label><select id="withdraw-bank" required class="input-dash"><option value="">Select linked account...</option></select></div>
+                    <div class="mb-6"><label class="text-xs text-purple-300 tracking-wider block mb-1.5">NOTE (OPTIONAL)</label><textarea id="withdraw-note" rows="2" placeholder="Purpose of withdrawal..." class="input-dash"></textarea></div>
+                    <button type="submit" id="withdraw-btn" class="w-full py-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-2xl transition-all">SUBMIT WITHDRAWAL REQUEST</button>
+                </form>
+            </div>
+            <div class="glass rounded-3xl p-7">
+                <div class="flex justify-between items-center mb-4"><div class="font-semibold heading-font">Linked Bank Accounts</div><button onclick="showAddWalletModal()" class="text-xs text-violet-400 flex items-center gap-x-1 font-medium"><i class="fas fa-plus"></i> ADD NEW</button></div>
+                <div id="linked-accounts-list" class="space-y-3"><p class="text-sm text-purple-400">No linked accounts. Add one above.</p></div>
+            </div>
+        </div>
+
+        <!-- ========== ACTIVITY ========== -->
+        <div id="section-activity" class="section">
+            <h2 class="text-3xl font-bold tracking-tight mb-6 heading-font">Activity &amp; Services</h2>
+            <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                <div class="relative flex-1 max-w-md">
+                    <input type="text" id="transaction-search" oninput="handleSearchInput()" placeholder="Search transactions..." class="w-full bg-[#1e143c] border border-purple-800 pl-10 pr-10 py-2.5 rounded-2xl text-sm focus:outline-none focus:border-violet-500 placeholder:text-purple-400">
+                    <i class="fas fa-search absolute left-4 top-3.5 text-purple-400"></i>
+                    <button id="clear-search-btn" onclick="clearTransactionSearch()" class="hidden absolute right-3 top-2.5 w-7 h-7 flex items-center justify-center text-purple-400 hover:text-white hover:bg-purple-800 rounded-full transition-colors"><i class="fas fa-times text-sm"></i></button>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="filterTransactions('all')" class="filter-btn active px-4 py-1.5 text-xs rounded-2xl bg-violet-600 text-white font-medium" data-filter="all">All</button>
+                    <button onclick="filterTransactions('deposit')" class="filter-btn px-4 py-1.5 text-xs rounded-2xl bg-[#2a1f4a] border border-purple-800 font-medium hover:bg-purple-900/40" data-filter="deposit">Deposits</button>
+                    <button onclick="filterTransactions('withdrawal')" class="filter-btn px-4 py-1.5 text-xs rounded-2xl bg-[#2a1f4a] border border-purple-800 font-medium hover:bg-purple-900/40" data-filter="withdrawal">Withdrawals</button>
+                    <button onclick="filterTransactions('contribution')" class="filter-btn px-4 py-1.5 text-xs rounded-2xl bg-[#2a1f4a] border border-purple-800 font-medium hover:bg-purple-900/40" data-filter="contribution">Contributions</button>
+                </div>
+            </div>
+            <div class="glass rounded-3xl overflow-hidden mb-4 border border-purple-900/30">
+                <div class="overflow-x-auto table-scroll table-container table-full-history">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-[#1e143c]"><tr class="text-xs text-purple-200"><th class="px-4 sm:px-5 py-4 text-left font-medium whitespace-nowrap">DATE</th><th class="px-4 sm:px-5 py-4 text-left font-medium min-w-[160px]">DESCRIPTION</th><th class="px-4 sm:px-5 py-4 text-right font-semibold whitespace-nowrap">AMOUNT</th><th class="px-4 sm:px-5 py-4 text-center font-medium whitespace-nowrap">STATUS</th><th class="px-3 sm:px-4 py-4 w-8"></th></tr></thead>
+                        <tbody id="all-transactions-tbody" class="divide-y divide-purple-900/30"><tr><td colspan="5" class="px-6 py-10 text-center text-purple-400">No transactions yet.</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="pagination-wrapper" class="mb-8"></div>
+            <div class="flex justify-end mb-8">
+                <button onclick="downloadStatement()" class="px-5 py-2.5 text-sm font-semibold flex items-center gap-x-2 border border-purple-700 hover:bg-purple-900/30 rounded-2xl transition-colors"><i class="fas fa-download"></i><span>Download Statement (PDF)</span></button>
+            </div>
+            <div class="grid md:grid-cols-3 gap-4">
+                <div onclick="showLoanModal()" class="glass p-6 rounded-3xl cursor-pointer hover:border-violet-500 border border-transparent transition-all"><div class="flex items-center gap-x-4"><div class="w-12 h-12 bg-amber-500/20 rounded-2xl flex items-center justify-center flex-shrink-0"><i class="fas fa-handshake text-2xl text-amber-400"></i></div><div><div class="font-semibold heading-font">Apply for Loan</div><div class="text-xs text-purple-300">Up to ₦150,000 based on contributions</div></div></div></div>
+                <div onclick="showSupportModal()" class="glass p-6 rounded-3xl cursor-pointer hover:border-violet-500 border border-transparent transition-all"><div class="flex items-center gap-x-4"><div class="w-12 h-12 bg-sky-500/20 rounded-2xl flex items-center justify-center flex-shrink-0"><i class="fas fa-headset text-2xl text-sky-400"></i></div><div><div class="font-semibold heading-font">Message Support</div><div class="text-xs text-purple-300">Usually replies within 2 hours</div></div></div></div>
+                <div onclick="showKYCModal()" class="glass p-6 rounded-3xl cursor-pointer hover:border-violet-500 border border-transparent transition-all"><div class="flex items-center gap-x-4"><div class="w-12 h-12 bg-orange-500/20 rounded-2xl flex items-center justify-center flex-shrink-0"><i class="fas fa-id-card text-2xl text-orange-400"></i></div><div><div class="font-semibold heading-font">Complete KYC</div><div class="text-xs text-purple-300">Unlock full features &amp; loans</div></div></div></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- BOTTOM DOCK -->
+    <div class="fixed bottom-0 left-0 right-0 bottom-dock z-[60] border-t border-purple-900/30">
+        <div class="max-w-screen-xl mx-auto flex justify-around items-center h-16 px-2">
+            <button onclick="showSection('home')" id="dock-home" class="dock-item flex flex-col items-center justify-center w-16 text-xs font-medium active:scale-95 transition-transform"><i class="fas fa-home text-xl mb-0.5"></i><span>Home</span></button>
+            <button onclick="showSection('plans')" id="dock-plans" class="dock-item flex flex-col items-center justify-center w-16 text-xs font-medium active:scale-95 transition-transform"><i class="fas fa-tasks text-xl mb-0.5"></i><span>Plans</span></button>
+            <button onclick="showSection('deposit')" id="dock-deposit" class="dock-item flex flex-col items-center justify-center w-16 text-xs font-medium active:scale-95 transition-transform"><i class="fas fa-wallet text-xl mb-0.5"></i><span>Deposit</span></button>
+            <button onclick="showSection('wallet')" id="dock-wallet" class="dock-item flex flex-col items-center justify-center w-16 text-xs font-medium active:scale-95 transition-transform"><i class="fas fa-credit-card text-xl mb-0.5"></i><span>Wallet</span></button>
+            <button onclick="showSection('activity')" id="dock-activity" class="dock-item flex flex-col items-center justify-center w-16 text-xs font-medium active:scale-95 transition-transform"><i class="fas fa-exchange-alt text-xl mb-0.5"></i><span>Activity</span></button>
+        </div>
+    </div>
+
+    <!-- ===== MODALS ===== -->
+
+    <!-- Create Plan Modal -->
+    <div id="create-plan-modal" onclick="if(event.target.id==='create-plan-modal')hideCreatePlanModal()" class="hidden fixed inset-0 bg-black/70 flex items-end md:items-center justify-center z-[70]">
+        <div onclick="event.stopImmediatePropagation()" class="glass w-full md:w-[440px] md:rounded-3xl md:m-4 rounded-t-3xl p-7 modal">
+            <div class="flex justify-between items-center mb-6"><div class="font-bold text-xl heading-font">Create Contribution Plan</div><button onclick="hideCreatePlanModal()" class="text-3xl text-purple-300 hover:text-white">&times;</button></div>
+            <form id="plan-form" onsubmit="createNewPlan(event)">
+                <div class="space-y-4">
+                    <div><label class="text-xs font-bold tracking-wider text-purple-300">PLAN NAME</label><input type="text" id="plan-name" required value="Monthly Savings Goal" class="mt-1 input-dash"></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="text-xs font-bold tracking-wider text-purple-300">FREQUENCY</label><select id="plan-frequency" required class="mt-1 input-dash"><option value="Daily">Daily</option><option value="Weekly">Weekly</option><option value="Monthly" selected>Monthly</option></select></div>
+                        <div><label class="text-xs font-bold tracking-wider text-purple-300">AMOUNT PER PERIOD (₦)</label><input type="number" id="plan-amount" required value="5000" class="mt-1 input-dash"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="text-xs font-bold tracking-wider text-purple-300">DURATION (MONTHS)</label><input type="number" id="plan-duration" required value="6" class="mt-1 input-dash"></div>
+                        <div><label class="text-xs font-bold tracking-wider text-purple-300">TARGET GOAL (₦)</label><input type="number" id="plan-goal" required value="30000" class="mt-1 input-dash"></div>
+                    </div>
+                </div>
+                <div class="flex gap-x-3 mt-8">
+                    <button type="button" onclick="hideCreatePlanModal()" class="flex-1 py-3.5 text-sm font-semibold border border-purple-700 rounded-2xl">CANCEL</button>
+                    <button type="submit" id="plan-submit-btn" class="flex-1 py-3.5 bg-violet-600 text-white font-bold rounded-2xl">CREATE PLAN</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Wallet Modal -->
+    <div id="add-wallet-modal" onclick="if(event.target.id==='add-wallet-modal')hideAddWalletModal()" class="hidden fixed inset-0 bg-black/70 flex items-end md:items-center justify-center z-[70]">
+        <div onclick="event.stopImmediatePropagation()" class="glass w-full md:w-[400px] md:rounded-3xl md:m-4 rounded-t-3xl p-7 modal">
+            <div class="font-bold text-xl mb-6 heading-font">Register Bank Account</div>
+            <form id="wallet-form" onsubmit="addNewWallet(event)">
+                <div class="space-y-4">
+                    <div><label class="font-medium text-xs tracking-wider text-purple-300">BANK NAME</label><input type="text" id="wallet-bank" required class="w-full mt-1 input-dash" placeholder="Access Bank"></div>
+                    <div><label class="font-medium text-xs tracking-wider text-purple-300">ACCOUNT NUMBER</label><input type="text" id="wallet-account" required maxlength="10" class="w-full mt-1 input-dash font-mono" placeholder="0123456789"></div>
+                    <div><label class="font-medium text-xs tracking-wider text-purple-300">ACCOUNT NAME</label><input type="text" id="wallet-name" required class="w-full mt-1 input-dash" placeholder="Your Account Name"></div>
+                </div>
+                <div class="flex gap-3 mt-7">
+                    <button type="button" onclick="hideAddWalletModal()" class="flex-1 py-3 rounded-2xl border border-purple-700 font-semibold text-sm">Cancel</button>
+                    <button type="submit" class="flex-1 py-3 bg-violet-600 text-white rounded-2xl font-bold text-sm">SAVE ACCOUNT</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loan Modal -->
+    <div id="loan-modal" onclick="if(event.target.id==='loan-modal')hideLoanModal()" class="hidden fixed inset-0 bg-black/70 flex items-end md:items-center justify-center z-[70]">
+        <div onclick="event.stopImmediatePropagation()" class="glass w-full md:w-[480px] md:rounded-3xl md:m-4 rounded-t-3xl p-7 modal">
+            <div class="flex justify-between mb-5"><div><div class="font-bold text-xl heading-font">Apply for a Loan</div><div class="text-xs text-purple-300">Contribution-backed • Fast approval</div></div><button onclick="hideLoanModal()" class="text-3xl text-purple-300 hover:text-white">&times;</button></div>
+            <div class="mb-5 p-4 bg-violet-900/30 border border-violet-700 rounded-2xl text-sm"><div class="font-medium text-violet-300">Your current eligibility</div><div class="text-2xl font-bold text-white mt-1 heading-font">Up to ₦150,000</div></div>
+            <form id="loan-form" onsubmit="applyForLoan(event)">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                    <div><label class="text-xs text-purple-300 tracking-wider block mb-1.5">LOAN AMOUNT (₦)</label><input type="number" id="loan-amount" required value="50000" min="10000" step="5000" class="input-dash font-semibold text-xl"></div>
+                    <div><label class="text-xs text-purple-300 tracking-wider block mb-1.5">REPAYMENT PERIOD</label><select id="loan-period" required class="input-dash"><option value="1">1 month</option><option value="3" selected>3 months</option><option value="6">6 months</option><option value="12">12 months</option></select></div>
+                </div>
+                <div class="mb-5"><label class="text-xs text-purple-300 tracking-wider block mb-1.5">PURPOSE</label><select id="loan-purpose" required class="input-dash"><option value="">Select purpose...</option><option>Business Expansion</option><option>Education / School Fees</option><option>Medical Emergency</option><option>Rent / Housing</option><option>Personal / Family</option><option>Other</option></select></div>
+                <div class="mb-6"><label class="text-xs text-purple-300 tracking-wider block mb-1.5">ADDITIONAL NOTES</label><textarea id="loan-note" rows="2" class="input-dash" placeholder="Any extra information..."></textarea></div>
+                <button type="submit" id="loan-submit-btn" class="w-full py-4 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-2xl transition-all">SUBMIT LOAN APPLICATION</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Support Modal -->
+    <div id="support-modal" onclick="if(event.target.id==='support-modal')hideSupportModal()" class="hidden fixed inset-0 bg-black/70 flex items-end md:items-center justify-center z-[70]">
+        <div onclick="event.stopImmediatePropagation()" class="glass w-full md:w-[440px] md:rounded-3xl md:m-4 rounded-t-3xl p-7 modal">
+            <div class="font-bold text-xl mb-5 flex items-center gap-x-2 heading-font"><i class="fas fa-headset text-sky-400"></i><span>New Support Ticket</span></div>
+            <form id="support-form" onsubmit="sendSupportMessage(event)">
+                <div class="mb-4"><input type="text" id="support-subject" required placeholder="Subject (e.g. Issue with deposit)" class="input-dash w-full"></div>
+                <div class="mb-5"><textarea id="support-message" required rows="4" placeholder="Describe your issue in detail..." class="input-dash w-full resize-y"></textarea></div>
+                <div class="flex gap-x-3"><button type="button" onclick="hideSupportModal()" class="flex-1 py-3 border border-purple-700 rounded-2xl font-semibold">CANCEL</button><button type="submit" class="flex-1 py-3 bg-sky-600 text-white font-bold rounded-2xl">SEND MESSAGE</button></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- KYC Modal -->
+    <div id="kyc-modal" onclick="if(event.target.id==='kyc-modal')hideKYCModal()" class="hidden fixed inset-0 bg-black/70 flex items-end md:items-center justify-center z-[70]">
+        <div onclick="event.stopImmediatePropagation()" class="glass w-full md:w-[520px] md:rounded-3xl md:m-4 rounded-t-3xl p-7 modal">
+            <div class="flex justify-between items-center mb-5">
+                <div><div class="font-bold text-2xl heading-font">Complete Your KYC</div><div class="text-sm text-purple-300">Unlock loans, higher limits &amp; full features</div></div>
+                <button onclick="hideKYCModal()" class="text-3xl text-purple-300 hover:text-white">&times;</button>
+            </div>
+            <div id="kyc-status-badge" class="mb-5 inline-flex items-center gap-x-2 px-4 py-1.5 bg-amber-900/60 text-amber-300 text-xs font-bold rounded-2xl"><i class="fas fa-clock"></i><span>VERIFICATION PENDING</span></div>
+            <div class="mb-6 p-5 bg-[#1e143c] border border-purple-800 rounded-2xl">
+                <div class="flex items-start gap-x-4">
+                    <div class="w-11 h-11 bg-[#25D366] rounded-2xl flex items-center justify-center flex-shrink-0"><i class="fab fa-whatsapp text-white text-3xl"></i></div>
+                    <div class="flex-1"><div class="font-semibold text-white">Pay ₦500 Convenience Fee</div><div class="text-xs text-purple-300 mt-0.5 leading-snug">Send proof of payment via WhatsApp to activate your account.</div>
+                    <button onclick="uploadProofViaWhatsApp(true)" class="mt-3 px-5 py-2.5 bg-[#25D366] hover:bg-[#128C7E] transition-all text-white text-sm font-bold rounded-2xl flex items-center gap-x-2"><i class="fab fa-whatsapp"></i><span>SEND PROOF VIA WHATSAPP</span></button></div>
+                </div>
+            </div>
+            <form id="kyc-form" onsubmit="submitKYCForm(event)">
+                <div class="space-y-5">
+                    <div><label class="text-xs font-bold tracking-wider text-purple-200 block mb-1.5">ID TYPE</label><select id="kyc-id-type" required class="input-dash w-full"><option value="">Select ID Type</option><option>National ID Card (NIN Slip)</option><option>Driver's License</option><option>International Passport</option><option>Voter's Card</option></select></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div><label class="text-xs font-bold tracking-wider text-purple-200 block mb-1.5">NIN (11 digits)</label><input type="text" id="kyc-nin" required maxlength="11" pattern="[0-9]{11}" class="input-dash font-mono w-full" placeholder="12345678901"></div>
+                        <div><label class="text-xs font-bold tracking-wider text-purple-200 block mb-1.5">BVN (11 digits)</label><input type="text" id="kyc-bvn" required maxlength="11" pattern="[0-9]{11}" class="input-dash font-mono w-full" placeholder="22334455667"></div>
+                    </div>
+                    <div><label class="text-xs font-bold tracking-wider text-purple-200 block mb-2">ID CARD FRONT <span class="text-red-400">*</span></label><div id="upload-front-zone" class="upload-zone" onclick="document.getElementById('kyc-id-front').click()"><i class="fas fa-id-card text-3xl text-purple-400 mb-2"></i><div class="text-sm font-medium" id="front-label">Click to upload front of ID</div><div class="text-[10px] text-purple-300 mt-0.5">JPG, PNG • Max 5MB</div><input type="file" id="kyc-id-front" accept="image/*" class="hidden" onchange="handleFileSelect('kyc-id-front','upload-front-zone','front-label')"></div></div>
+                    <div><label class="text-xs font-bold tracking-wider text-purple-200 block mb-2">ID CARD BACK <span class="text-purple-400">(Optional)</span></label><div id="upload-back-zone" class="upload-zone" onclick="document.getElementById('kyc-id-back').click()"><i class="fas fa-id-card text-3xl text-purple-400 mb-2"></i><div class="text-sm font-medium" id="back-label">Click to upload back of ID</div><input type="file" id="kyc-id-back" accept="image/*" class="hidden" onchange="handleFileSelect('kyc-id-back','upload-back-zone','back-label')"></div></div>
+                    <div><label class="text-xs font-bold tracking-wider text-purple-200 block mb-2">SELFIE WITH ID CARD <span class="text-red-400">*</span></label><div id="upload-selfie-zone" class="upload-zone" onclick="document.getElementById('kyc-selfie').click()"><i class="fas fa-camera text-3xl text-purple-400 mb-2"></i><div class="text-sm font-medium" id="selfie-label">Take a selfie holding your ID</div><div class="text-[10px] text-purple-300 mt-0.5">Face + ID must be clearly visible</div><input type="file" id="kyc-selfie" accept="image/*" class="hidden" onchange="handleFileSelect('kyc-selfie','upload-selfie-zone','selfie-label')"></div></div>
+                </div>
+                <div id="kyc-upload-progress" class="hidden mt-4 p-3 bg-violet-900/30 border border-violet-700 rounded-2xl text-sm"><div class="flex items-center gap-x-2"><span class="spinner"></span><span id="kyc-progress-text">Uploading documents...</span></div></div>
+                <div class="mt-7 flex gap-x-3">
+                    <button type="button" onclick="hideKYCModal()" class="flex-1 py-3.5 border border-purple-700 rounded-2xl font-semibold text-sm">CANCEL</button>
+                    <button type="submit" id="kyc-submit-btn" class="flex-1 py-3.5 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-2xl text-sm">SUBMIT FOR VERIFICATION</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast-container" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[80] flex flex-col gap-y-2 items-center"></div>
+
+    <script>
+        // ==================== FIREBASE INIT ====================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBo0OV2eZY8yoAoilOelL04s1WYxlwcZ_c",
+            authDomain: "twitha-contributions.firebaseapp.com",
+            projectId: "twitha-contributions",
+            storageBucket: "twitha-contributions.firebasestorage.app",
+            messagingSenderId: "888884814076",
+            appId: "1:888884814076:web:9037c293b440f941627779"
+        };
+
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        let currentUser = null;
+        let userData = {};
+        let transactions = [];
+        let plans = [];
+        let linkedWallets = [];
+        let currentFilter = 'all';
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let currentSearchTerm = '';
+        let growthChartInstance = null;
+        let notifUnsubscribe = null;
+        let userUnsubscribe = null;
+        let txUnsubscribe = null;
+
+        // ==================== AUTH GUARD ====================
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) { window.location.href = 'index.html'; return; }
+            currentUser = user;
+            const snap = await db.collection('users').doc(user.uid).get();
+            if (!snap.exists) { auth.signOut(); window.location.href = 'index.html'; return; }
+            const role = snap.data().role;
+            if (role === 'admin' || role === 'subadmin') { window.location.href = 'admin-dashboard.html'; return; }
+            await initDashboard();
+        });
+
+        async function initDashboard() {
+            document.getElementById('loading-overlay').style.display = 'none';
+            const uid = currentUser.uid;
+            userUnsubscribe = db.collection('users').doc(uid).onSnapshot(snap => {
+                if (snap.exists) { userData = snap.data(); updateUIFromUserData(); }
+            });
+            txUnsubscribe = db.collection('users').doc(uid).collection('transactions').orderBy('createdAt', 'desc').limit(100).onSnapshot(snap => {
+                transactions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderRecentTransactions();
+                renderAllTransactions(currentFilter);
+                initGrowthChart();
+                renderRecentDeposits();
+            });
+            db.collection('users').doc(uid).collection('plans').onSnapshot(snap => {
+                plans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderPlans();
+                document.getElementById('active-plans-count').textContent = plans.length;
+            });
+            const walletSnap = await db.collection('users').doc(uid).collection('wallets').get();
+            linkedWallets = walletSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderLinkedWallets();
+            populateWithdrawBanks();
+            setupNotifications(uid);
+            checkKYCStatus();
+            setTimeout(initGrowthChart, 400);
+        }
+
+        function updateUIFromUserData() {
+            if (!userData) return;
+            const name = userData.name || currentUser.email.split('@')[0];
+            const firstName = name.split(' ')[0];
+            document.getElementById('top-user-name').textContent = name.split(' ').slice(0,2).join(' ');
+            document.getElementById('greeting-name').textContent = firstName;
+            const initials = name.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
+            document.getElementById('user-avatar').textContent = initials;
+            const balance = userData.balance || 0;
+            document.getElementById('main-balance').textContent = `₦${balance.toLocaleString()}.00`;
+            document.getElementById('wallet-balance').textContent = `₦${balance.toLocaleString()}.00`;
+            document.getElementById('available-balance-wallet').textContent = `₦${balance.toLocaleString()}.00`;
+            document.getElementById('total-deposit').textContent = `₦${(userData.totalDeposit||0).toLocaleString()}`;
+            document.getElementById('total-withdrawn').textContent = `₦${(userData.totalWithdrawn||0).toLocaleString()}`;
+            document.getElementById('total-savings').textContent = `₦${(userData.totalSavings||0).toLocaleString()}`;
+        }
+
+        function checkKYCStatus() {
+            const banner = document.getElementById('kyc-alert');
+            if (!banner) return;
+            if (userData.kycStatus === 'approved' || userData.kycStatus === 'submitted') banner.style.display = 'none';
+        }
+
+        // ==================== LOGOUT ====================
+        function showLogoutModal() { document.getElementById('logout-modal').classList.remove('hidden'); }
+        async function confirmLogout() {
+            if (notifUnsubscribe) notifUnsubscribe();
+            if (userUnsubscribe) userUnsubscribe();
+            if (txUnsubscribe) txUnsubscribe();
+            await auth.signOut();
+            window.location.href = 'index.html';
+        }
+
+        // ==================== NOTIFICATIONS ====================
+        function setupNotifications(uid) {
+            if (notifUnsubscribe) notifUnsubscribe();
+            notifUnsubscribe = db.collection('notifications').doc(uid).collection('items').orderBy('createdAt', 'desc').limit(30).onSnapshot(snap => {
+                const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderNotifications(items);
+                const unread = items.filter(n => !n.read).length;
+                const badge = document.getElementById('notif-badge');
+                if (unread > 0) { badge.textContent = unread > 9 ? '9+' : unread; badge.classList.remove('hidden'); badge.classList.add('flex'); }
+                else { badge.classList.add('hidden'); badge.classList.remove('flex'); }
+            });
+        }
+
+        function renderNotifications(items) {
+            const list = document.getElementById('notif-list');
+            if (!list) return;
+            if (items.length === 0) { list.innerHTML = '<div class="px-5 py-8 text-center text-purple-400 text-sm">No notifications yet</div>'; return; }
+            list.innerHTML = items.map(n => `<div class="notif-item px-5 py-4 cursor-pointer ${n.read ? '' : 'unread'}" onclick="markNotifRead('${n.id}')"><div class="font-semibold text-sm ${n.read ? 'text-purple-200' : 'text-white'}">${n.title || 'Notification'}</div><div class="text-xs text-purple-300 mt-0.5 leading-relaxed">${n.content || ''}</div><div class="text-[10px] text-purple-500 mt-1">${n.createdAt ? new Date(n.createdAt.toDate ? n.createdAt.toDate() : n.createdAt).toLocaleDateString('en-GB') : ''}</div></div>`).join('');
+        }
+
+        function toggleNotifPanel() { const panel = document.getElementById('notif-panel'); panel.classList.toggle('hidden'); }
+        async function markNotifRead(notifId) { if (!currentUser) return; await db.collection('notifications').doc(currentUser.uid).collection('items').doc(notifId).update({ read: true }); }
+        async function markAllNotifsRead() {
+            if (!currentUser) return;
+            const snap = await db.collection('notifications').doc(currentUser.uid).collection('items').where('read','==',false).get();
+            const batch = db.batch();
+            snap.docs.forEach(d => batch.update(d.ref, { read: true }));
+            await batch.commit();
+            showToast('All notifications marked as read');
+        }
+
+        document.addEventListener('click', (e) => {
+            const panel = document.getElementById('notif-panel');
+            const btn = document.getElementById('notif-btn');
+            if (panel && !panel.classList.contains('hidden') && !panel.contains(e.target) && !btn.contains(e.target)) panel.classList.add('hidden');
+        });
+
+        // ==================== TRANSACTIONS ====================
+        function renderRecentTransactions() {
+            const tbody = document.getElementById('recent-transactions-tbody');
+            if (!tbody) return;
+            const recent = transactions.slice(0, 4);
+            if (recent.length === 0) { tbody.innerHTML = '<tr><td colspan="3" class="px-5 py-8 text-center text-purple-400 text-sm">No transactions yet</td></tr>'; return; }
+            tbody.innerHTML = recent.map(tx => {
+                const isDebit = tx.type === 'withdrawal';
+                const color = isDebit ? 'text-rose-400' : 'text-emerald-400';
+                const sign = isDebit ? '-' : '+';
+                const date = tx.createdAt ? new Date(tx.createdAt.toDate ? tx.createdAt.toDate() : tx.createdAt).toLocaleDateString('en-GB') : tx.date || '';
+                return `<tr class="transaction-row cursor-pointer" onclick="viewTransactionDetail('${tx.id}')"><td class="px-5 py-4 min-w-0"><div class="font-medium text-sm">${tx.description || tx.type}</div><div class="text-[10px] text-purple-300 mt-0.5">${date}</div></td><td class="px-4 py-4 text-right whitespace-nowrap"><span class="${color} font-semibold tabular-nums">${sign}₦${(tx.amount||0).toLocaleString()}</span></td><td class="px-5 py-4 whitespace-nowrap"><span class="status-pill ${tx.status==='Approved'||tx.status==='approved' ? 'bg-emerald-900 text-emerald-300' : 'bg-amber-900 text-amber-300'}">${tx.status||'Pending'}</span></td></tr>`;
+            }).join('');
+        }
+
+        function renderAllTransactions(filter = 'all', resetPage = false) {
+            if (resetPage) currentPage = 1;
+            currentFilter = filter;
+            const tbody = document.getElementById('all-transactions-tbody');
+            if (!tbody) return;
+            let filtered = [...transactions];
+            if (filter !== 'all') filtered = filtered.filter(tx => tx.type === filter);
+            if (currentSearchTerm) { const term = currentSearchTerm.toLowerCase(); filtered = filtered.filter(tx => (tx.description||'').toLowerCase().includes(term) || (tx.type||'').toLowerCase().includes(term) || String(tx.amount||'').includes(term)); }
+            const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            const pageItems = filtered.slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage);
+            if (pageItems.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-purple-400">No transactions found.</td></tr>'; }
+            else {
+                tbody.innerHTML = pageItems.map(tx => {
+                    const isDebit = tx.type === 'withdrawal';
+                    const color = isDebit ? 'text-rose-400' : 'text-emerald-400';
+                    const date = tx.createdAt ? new Date(tx.createdAt.toDate ? tx.createdAt.toDate() : tx.createdAt).toLocaleDateString('en-GB') : tx.date || '';
+                    const statusClass = (tx.status==='Approved'||tx.status==='approved') ? 'bg-emerald-900 text-emerald-300' : (tx.status==='Rejected'||tx.status==='rejected') ? 'bg-red-900 text-red-300' : 'bg-amber-900 text-amber-300';
+                    return `<tr class="transaction-row cursor-pointer" onclick="viewTransactionDetail('${tx.id}')"><td class="px-5 py-4 text-xs text-purple-300 whitespace-nowrap">${date}</td><td class="px-5 py-4 min-w-0"><div class="font-medium text-sm">${(tx.description||tx.type||'').substring(0,60)}</div><div class="text-[10px] text-purple-300 uppercase tracking-wider">${tx.type||''}</div></td><td class="px-5 py-4 text-right font-bold tabular-nums whitespace-nowrap text-lg ${color}">₦${(tx.amount||0).toLocaleString()}</td><td class="px-5 py-4 text-center whitespace-nowrap"><span class="status-pill ${statusClass}">${tx.status||'Pending'}</span></td><td class="px-3 py-4 text-center"><i class="fas fa-eye text-violet-400"></i></td></tr>`;
+                }).join('');
+            }
+            renderPagination(filtered.length, totalPages);
+        }
+
+        function renderPagination(total, totalPages) {
+            const wrapper = document.getElementById('pagination-wrapper');
+            if (!wrapper) return;
+            if (totalPages <= 1) { wrapper.innerHTML = ''; return; }
+            const start = (currentPage-1)*itemsPerPage+1;
+            const end = Math.min(currentPage*itemsPerPage, total);
+            wrapper.innerHTML = `<div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 text-sm"><div class="text-purple-300 text-xs">Showing <span class="font-semibold text-white">${start}-${end}</span> of <span class="font-semibold text-white">${total}</span></div><div class="flex items-center gap-x-1"><button onclick="changePage(${currentPage-1})" ${currentPage===1?'disabled':''} class="px-3 py-1.5 rounded-xl border border-purple-700 hover:bg-purple-900/30 disabled:opacity-40 text-xs">← Prev</button><div class="px-3 py-1 text-xs font-mono bg-[#1e143c] rounded-xl border border-purple-800">Page ${currentPage}/${totalPages}</div><button onclick="changePage(${currentPage+1})" ${currentPage===totalPages?'disabled':''} class="px-3 py-1.5 rounded-xl border border-purple-700 hover:bg-purple-900/30 disabled:opacity-40 text-xs">Next →</button></div></div>`;
+        }
+
+        function changePage(p) { currentPage = p; renderAllTransactions(currentFilter); }
+        function handleSearchInput() {
+            const s = document.getElementById('transaction-search');
+            const clearBtn = document.getElementById('clear-search-btn');
+            currentSearchTerm = s ? s.value.trim() : '';
+            if (clearBtn) { currentSearchTerm.length > 0 ? (clearBtn.classList.remove('hidden'), clearBtn.classList.add('flex')) : (clearBtn.classList.add('hidden'), clearBtn.classList.remove('flex')); }
+            currentPage = 1; renderAllTransactions(currentFilter);
+        }
+        function clearTransactionSearch() {
+            const s = document.getElementById('transaction-search');
+            const clearBtn = document.getElementById('clear-search-btn');
+            if (s) s.value = '';
+            currentSearchTerm = '';
+            if (clearBtn) { clearBtn.classList.add('hidden'); clearBtn.classList.remove('flex'); }
+            currentPage = 1; renderAllTransactions(currentFilter);
+        }
+        function filterTransactions(type) {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active','bg-violet-600','text-white');
+                btn.classList.add('bg-[#2a1f4a]','border','border-purple-800');
+                if (btn.getAttribute('data-filter') === type) { btn.classList.add('active','bg-violet-600','text-white'); btn.classList.remove('bg-[#2a1f4a]','border','border-purple-800'); }
+            });
+            currentSearchTerm = '';
+            const si = document.getElementById('transaction-search');
+            if (si) si.value = '';
+            renderAllTransactions(type, true);
+        }
+
+        function viewTransactionDetail(id) {
+            const tx = transactions.find(t => t.id === id);
+            if (!tx) return;
+            const date = tx.createdAt ? new Date(tx.createdAt.toDate ? tx.createdAt.toDate() : tx.createdAt).toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) : tx.date || '';
+            const isDebit = tx.type === 'withdrawal';
+            const color = isDebit ? 'text-rose-400' : 'text-emerald-400';
+            const statusClass = (tx.status==='Approved'||tx.status==='approved') ? 'bg-emerald-900 text-emerald-300' : 'bg-amber-900 text-amber-300';
+            document.body.insertAdjacentHTML('beforeend', `<div onclick="this.remove()" class="fixed inset-0 bg-black/70 flex items-center justify-center z-[80]"><div onclick="event.stopImmediatePropagation()" class="glass rounded-3xl w-full max-w-md mx-4 p-7 modal"><div class="flex justify-between mb-5"><div class="font-bold text-xl heading-font">Transaction Details</div><button onclick="this.closest('.fixed').remove()" class="text-3xl text-purple-300">&times;</button></div><div class="space-y-3 text-sm"><div class="flex justify-between py-3 border-b border-purple-900/40"><span class="text-purple-300">Reference</span><span class="font-mono">#TXN-${id.slice(-8).toUpperCase()}</span></div><div class="flex justify-between py-3 border-b border-purple-900/40"><span class="text-purple-300">Date</span><span>${date}</span></div><div class="flex justify-between py-3 border-b border-purple-900/40"><span class="text-purple-300">Description</span><span class="font-medium text-right max-w-[60%]">${tx.description||tx.type}</span></div><div class="flex justify-between py-3 border-b border-purple-900/40"><span class="text-purple-300">Type</span><span class="capitalize">${tx.type}</span></div><div class="flex justify-between py-3 border-b border-purple-900/40"><span class="text-purple-300">Amount</span><span class="font-semibold text-xl ${color}">₦${(tx.amount||0).toLocaleString()}</span></div><div class="flex justify-between items-center py-3"><span class="text-purple-300">Status</span><span class="status-pill px-4 ${statusClass}">${tx.status||'Pending'}</span></div></div><div class="mt-7 pt-5 border-t border-purple-900/40 flex gap-x-3"><button onclick="this.closest('.fixed').remove()" class="flex-1 py-3 text-sm border border-purple-700 font-semibold rounded-2xl">CLOSE</button>${(tx.type==='contribution'||tx.type==='deposit') ? `<button onclick="downloadReceipt('${id}');this.closest('.fixed').remove()" class="flex-1 py-3 bg-violet-600 text-white text-sm font-bold rounded-2xl">DOWNLOAD RECEIPT</button>` : ''}</div></div></div>`);
+        }
+
+        // ==================== CHART ====================
+        function initGrowthChart() {
+            const ctx = document.getElementById('growthChart');
+            if (!ctx) return;
+            if (growthChartInstance) growthChartInstance.destroy();
+            const months = [];
+            const data = Array(6).fill(0);
+            for (let i=5; i>=0; i--) { const d = new Date(); d.setMonth(d.getMonth()-i); months.push(d.toLocaleString('default',{month:'short'})); }
+            transactions.filter(tx => tx.type !== 'withdrawal').forEach(tx => {
+                if (!tx.createdAt) return;
+                const txDate = tx.createdAt.toDate ? tx.createdAt.toDate() : new Date(tx.createdAt);
+                const now = new Date();
+                const diff = (now.getFullYear()-txDate.getFullYear())*12 + now.getMonth()-txDate.getMonth();
+                if (diff >= 0 && diff < 6) data[5-diff] += (tx.amount||0);
+            });
+            growthChartInstance = new Chart(ctx, { type: 'line', data: { labels: months, datasets: [{ label: 'Contributions (₦)', data, borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.1)', borderWidth: 3, tension: 0.35, fill: true, pointBackgroundColor: '#1e143c', pointBorderColor: '#a78bfa', pointBorderWidth: 2, pointRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(124,58,237,0.15)' }, ticks: { color: '#64748b', callback: v => '₦'+(v/1000)+'k' } }, x: { grid: { color: 'rgba(124,58,237,0.1)' }, ticks: { color: '#64748b' } } } } });
+        }
+
+        // ==================== PLANS ====================
+        function renderPlans() {
+            const container = document.getElementById('plans-container');
+            if (!container) return;
+            if (plans.length === 0) { container.innerHTML = `<div class="col-span-full glass border border-dashed border-purple-700 rounded-3xl p-10 text-center"><i class="fas fa-tasks text-4xl text-purple-500 mb-4"></i><div class="font-semibold text-lg">No active plans yet</div><p class="text-sm text-purple-300 mt-1 mb-5">Start building your savings habit today.</p><button onclick="showCreatePlanModal()" class="px-7 py-2.5 text-sm font-bold bg-violet-600 text-white rounded-2xl">Create your first plan</button></div>`; return; }
+            container.innerHTML = plans.map((plan) => {
+                const progress = Math.min(Math.round(((plan.currentSaved||0)/plan.goal)*100), 100);
+                const isApproved = plan.status === 'Approved' || plan.status === 'approved';
+                const statusBadge = plan.status === 'Pending' ? `<div class="text-[10px] px-3 py-px bg-amber-900/70 text-amber-300 rounded font-bold">PENDING ADMIN APPROVAL</div>` : `<div class="text-[10px] px-3 py-px bg-emerald-900/70 text-emerald-300 rounded font-bold">APPROVED</div>`;
+                const progressColor = progress >= 80 ? 'bg-emerald-500' : progress >= 50 ? 'bg-amber-500' : 'bg-violet-500';
+                return `<div class="glass rounded-3xl p-6 flex flex-col border border-purple-900/30">
+                    <div class="flex justify-between mb-4"><div><div class="font-semibold text-lg tracking-tight heading-font">${plan.name}</div><div class="text-xs text-emerald-400 font-medium">${plan.frequency} • ₦${(plan.amount||0).toLocaleString()} / period</div></div><div class="text-xs px-3 py-px bg-emerald-900/60 text-emerald-300 rounded font-bold h-fit">${plan.duration} mo</div></div>
+                    <div class="my-4">
+                        <div class="flex justify-between text-xs mb-1.5"><span class="text-purple-300">Progress</span><span class="font-bold text-emerald-300">${progress}%</span></div>
+                        <div class="plan-tracker-bar"><div class="plan-tracker-fill ${progressColor}" style="width:${progress}%"></div></div>
+                        <div class="flex justify-between text-[10px] mt-1 text-purple-400"><div>₦${(plan.currentSaved||0).toLocaleString()}</div><div>Goal: ₦${(plan.goal||0).toLocaleString()}</div></div>
+                    </div>
+                    <div class="mt-auto pt-4 border-t border-purple-900/30"><div class="mb-3">${statusBadge}</div><div class="flex items-center gap-x-2">${isApproved ? `<button onclick="makeContribution('${plan.id}')" class="flex-1 py-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl">MAKE CONTRIBUTION</button>` : `<div class="flex-1 py-2.5 text-xs text-center text-amber-300 bg-amber-900/40 rounded-2xl">Awaiting Admin Approval</div>`}<button onclick="deletePlan('${plan.id}')" class="px-4 py-2.5 text-xs font-bold border border-red-800 text-red-400 hover:bg-red-900/30 rounded-2xl"><i class="fas fa-trash"></i></button></div></div>
+                </div>`;
+            }).join('');
+        }
+
+        function showCreatePlanModal() { document.getElementById('create-plan-modal').classList.remove('hidden'); document.getElementById('create-plan-modal').classList.add('flex'); }
+        function hideCreatePlanModal() { document.getElementById('create-plan-modal').classList.remove('flex'); document.getElementById('create-plan-modal').classList.add('hidden'); }
+
+        async function createNewPlan(e) {
+            e.preventDefault();
+            const btn = document.getElementById('plan-submit-btn');
+            btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+            const plan = { name: document.getElementById('plan-name').value, frequency: document.getElementById('plan-frequency').value, amount: parseFloat(document.getElementById('plan-amount').value), duration: parseInt(document.getElementById('plan-duration').value), goal: parseFloat(document.getElementById('plan-goal').value), currentSaved: 0, status: 'Pending', createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+            await db.collection('users').doc(currentUser.uid).collection('plans').add(plan);
+            btn.disabled = false; btn.textContent = 'CREATE PLAN';
+            hideCreatePlanModal();
+            showToast('Plan submitted! Awaiting admin approval.', 'success');
+        }
+
+        async function makeContribution(planId) {
+            const plan = plans.find(p => p.id === planId);
+            if (!plan) return;
+            const amount = plan.amount;
+            const batch = db.batch();
+            const txRef = db.collection('users').doc(currentUser.uid).collection('transactions').doc();
+            batch.set(txRef, { type: 'contribution', description: `${plan.name} - ${plan.frequency}`, amount, status: 'Approved', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+            batch.update(db.collection('users').doc(currentUser.uid).collection('plans').doc(planId), { currentSaved: firebase.firestore.FieldValue.increment(amount) });
+            batch.update(db.collection('users').doc(currentUser.uid), { totalSavings: firebase.firestore.FieldValue.increment(amount), totalDeposit: firebase.firestore.FieldValue.increment(amount) });
+            await batch.commit();
+            showToast(`₦${amount.toLocaleString()} contributed to ${plan.name}!`, 'success');
+        }
+
+        async function deletePlan(planId) {
+            if (!confirm('Delete this contribution plan?')) return;
+            await db.collection('users').doc(currentUser.uid).collection('plans').doc(planId).delete();
+            showToast('Plan deleted.', 'info');
+        }
+
+        // ==================== DEPOSITS ====================
+        function renderRecentDeposits() {
+            const tbody = document.getElementById('recent-deposits-tbody');
+            if (!tbody) return;
+            const deposits = transactions.filter(tx => tx.type === 'deposit').slice(0,5);
+            if (deposits.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="px-5 py-8 text-center text-xs text-purple-400">No deposits recorded yet</td></tr>'; return; }
+            tbody.innerHTML = deposits.map(d => {
+                const date = d.createdAt ? new Date(d.createdAt.toDate ? d.createdAt.toDate() : d.createdAt).toLocaleDateString('en-GB') : d.date || '';
+                const statusClass = (d.status==='Approved'||d.status==='approved') ? 'bg-emerald-900 text-emerald-300' : 'bg-amber-900 text-amber-300';
+                return `<tr><td class="px-5 py-4"><div class="font-semibold">₦${(d.amount||0).toLocaleString()}</div><div class="text-[10px] text-purple-300">${date}</div></td><td class="px-5 py-4"><span class="status-pill ${statusClass}">${d.status||'Pending'}</span></td></tr>`;
+            }).join('');
+        }
+
+        function uploadProofViaWhatsApp(fromKYC = false) {
+            const userName = userData.name || currentUser.email;
+            const msg = fromKYC ? `Hello TWITHA, I am sending ₦500 KYC convenience fee proof. Name: ${userName}, Email: ${currentUser.email}, UID: ${currentUser.uid}` : `Hello TWITHA, I have made a deposit. Name: ${userName}, Email: ${currentUser.email}, UID: ${currentUser.uid}`;
+            window.open(`https://wa.me/2347065774786?text=${encodeURIComponent(msg)}`, '_blank');
+            showToast('Opening WhatsApp... Please send your payment screenshot.', 'success');
+            if (fromKYC) {
+                const badge = document.getElementById('kyc-status-badge');
+                if (badge) { badge.innerHTML = '<i class="fas fa-check-circle text-emerald-400"></i> <span>PAYMENT PROOF SENT – AWAITING CONFIRMATION</span>'; badge.className = 'mb-5 inline-flex items-center gap-x-2 px-4 py-1.5 bg-emerald-900/60 text-emerald-300 text-xs font-bold rounded-2xl'; }
+            }
+        }
+
+        // ==================== WITHDRAWAL ====================
+        function populateWithdrawBanks() {
+            const sel = document.getElementById('withdraw-bank');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">Select linked account...</option>';
+            linkedWallets.forEach(w => { sel.innerHTML += `<option value="${w.bank} • ${w.account}">${w.bank} • ${w.account} (${w.accountName})</option>`; });
+        }
+
+        async function requestWithdrawal(e) {
+            e.preventDefault();
+            const amount = parseFloat(document.getElementById('withdraw-amount').value);
+            const bank = document.getElementById('withdraw-bank').value;
+            const note = document.getElementById('withdraw-note').value || '';
+            const balance = userData.balance || 0;
+            if (amount > balance) { showToast('Insufficient balance.', 'error'); return; }
+            if (!bank) { showToast('Please select a bank account.', 'error'); return; }
+            const btn = document.getElementById('withdraw-btn');
+            btn.disabled = true; btn.innerHTML = '<span class="spinner mr-2"></span>Submitting...';
+            const requestId = db.collection('withdrawals').doc().id;
+            const batch = db.batch();
+            batch.set(db.collection('withdrawals').doc(requestId), { userId: currentUser.uid, userName: userData.name || currentUser.email, userEmail: currentUser.email, amount, bank, note, status: 'Pending', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+            batch.update(db.collection('users').doc(currentUser.uid), { balance: firebase.firestore.FieldValue.increment(-amount), totalWithdrawn: firebase.firestore.FieldValue.increment(amount) });
+            batch.set(db.collection('users').doc(currentUser.uid).collection('transactions').doc(), { type: 'withdrawal', description: `Withdrawal to ${bank}${note ? ' — '+note : ''}`, amount, status: 'Pending', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+            await batch.commit();
+            btn.disabled = false; btn.textContent = 'SUBMIT WITHDRAWAL REQUEST';
+            document.getElementById('withdraw-form').reset();
+            showToast('Withdrawal request submitted! Processing within 24–48 hours.', 'success');
+            setTimeout(() => showSection('activity'), 1500);
+        }
+
+        // ==================== LINKED WALLETS ====================
+        function renderLinkedWallets() {
+            const container = document.getElementById('linked-accounts-list');
+            if (!container) return;
+            if (linkedWallets.length === 0) { container.innerHTML = '<p class="text-sm text-purple-400">No linked accounts. Add one above.</p>'; return; }
+            container.innerHTML = linkedWallets.map((w) => `<div class="p-4 border rounded-2xl flex justify-between items-center text-sm ${w.primary ? 'border-violet-500 bg-violet-900/20' : 'border-purple-800'}"><div class="flex-1 min-w-0"><div class="font-semibold">${w.bank}</div><div class="font-mono text-xs text-purple-300 truncate">${w.account} • ${w.accountName}</div></div>${w.primary ? '<div class="text-[10px] px-2.5 py-px bg-violet-600 text-white rounded ml-3">PRIMARY</div>' : `<button onclick="deleteLinkedWallet('${w.id}')" class="ml-3 text-red-400 hover:text-red-500 p-2"><i class="fas fa-trash text-sm"></i></button>`}</div>`).join('');
+            populateWithdrawBanks();
+        }
+
+        function showAddWalletModal() { document.getElementById('add-wallet-modal').classList.remove('hidden'); document.getElementById('add-wallet-modal').classList.add('flex'); }
+        function hideAddWalletModal() { document.getElementById('add-wallet-modal').classList.remove('flex'); document.getElementById('add-wallet-modal').classList.add('hidden'); }
+
+        async function addNewWallet(e) {
+            e.preventDefault();
+            const wallet = { bank: document.getElementById('wallet-bank').value, account: document.getElementById('wallet-account').value, accountName: document.getElementById('wallet-name').value, primary: linkedWallets.length === 0, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+            const docRef = await db.collection('users').doc(currentUser.uid).collection('wallets').add(wallet);
+            linkedWallets.push({ id: docRef.id, ...wallet });
+            renderLinkedWallets();
+            hideAddWalletModal();
+            document.getElementById('wallet-form').reset();
+            showToast('Bank account registered!', 'success');
+        }
+
+        async function deleteLinkedWallet(walletId) {
+            if (!confirm('Remove this bank account?')) return;
+            await db.collection('users').doc(currentUser.uid).collection('wallets').doc(walletId).delete();
+            linkedWallets = linkedWallets.filter(w => w.id !== walletId);
+            renderLinkedWallets();
+            showToast('Bank account removed.', 'info');
+        }
+
+        // ==================== LOAN ====================
+        function showLoanModal() { document.getElementById('loan-modal').classList.remove('hidden'); document.getElementById('loan-modal').classList.add('flex'); }
+        function hideLoanModal() { document.getElementById('loan-modal').classList.remove('flex'); document.getElementById('loan-modal').classList.add('hidden'); }
+
+        async function applyForLoan(e) {
+            e.preventDefault();
+            const amount = parseFloat(document.getElementById('loan-amount').value);
+            const period = document.getElementById('loan-period').value;
+            const purpose = document.getElementById('loan-purpose').value;
+            const note = document.getElementById('loan-note').value || '';
+            const btn = document.getElementById('loan-submit-btn');
+            btn.disabled = true; btn.innerHTML = '<span class="spinner mr-2"></span>Submitting...';
+            await db.collection('loans').add({ userId: currentUser.uid, userName: userData.name || currentUser.email, userEmail: currentUser.email, amount, period, purpose, note, status: 'Pending Review', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+            await db.collection('users').doc(currentUser.uid).collection('transactions').add({ type: 'loan', description: `Loan Application — ${purpose} (${period} months)`, amount, status: 'Pending Review', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+            btn.disabled = false; btn.textContent = 'SUBMIT LOAN APPLICATION';
+            hideLoanModal();
+            showToast('Loan application submitted! Our team will contact you shortly.', 'success');
+        }
+
+        // ==================== SUPPORT ====================
+        function showSupportModal() { document.getElementById('support-modal').classList.remove('hidden'); document.getElementById('support-modal').classList.add('flex'); }
+        function hideSupportModal() { document.getElementById('support-modal').classList.remove('flex'); document.getElementById('support-modal').classList.add('hidden'); }
+
+        async function sendSupportMessage(e) {
+            e.preventDefault();
+            const subject = document.getElementById('support-subject').value;
+            const message = document.getElementById('support-message').value;
+            await db.collection('supportTickets').add({ userId: currentUser.uid, userName: userData.name || currentUser.email, userEmail: currentUser.email, subject, message, status: 'Open', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+            hideSupportModal();
+            document.getElementById('support-form').reset();
+            showToast('Support ticket submitted! We\'ll respond within 2 hours.', 'success');
+        }
+
+        // ==================== KYC ====================
+        function showKYCModal() { document.getElementById('kyc-modal').classList.remove('hidden'); document.getElementById('kyc-modal').classList.add('flex'); }
+        function hideKYCModal() { document.getElementById('kyc-modal').classList.remove('flex'); document.getElementById('kyc-modal').classList.add('hidden'); }
+
+        function handleFileSelect(inputId, zoneId, labelId) {
+            const input = document.getElementById(inputId);
+            const zone = document.getElementById(zoneId);
+            const label = document.getElementById(labelId);
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                if (file.size > 5 * 1024 * 1024) { showToast('File too large. Max 5MB.', 'error'); input.value = ''; return; }
+                zone.classList.add('file-loaded');
+                label.textContent = `✓ ${file.name}`;
+            }
+        }
+
+        async function submitKYCForm(e) {
+            e.preventDefault();
+            const idType = document.getElementById('kyc-id-type').value;
+            const nin = document.getElementById('kyc-nin').value;
+            const bvn = document.getElementById('kyc-bvn').value;
+            const frontFile = document.getElementById('kyc-id-front').files[0];
+            const backFile = document.getElementById('kyc-id-back').files[0];
+            const selfieFile = document.getElementById('kyc-selfie').files[0];
+            if (!frontFile || !selfieFile) { showToast('Please upload ID front and selfie.', 'error'); return; }
+            const btn = document.getElementById('kyc-submit-btn');
+            const progress = document.getElementById('kyc-upload-progress');
+            const progressText = document.getElementById('kyc-progress-text');
+            btn.disabled = true; btn.innerHTML = '<span class="spinner mr-2"></span>Uploading...';
+            progress.classList.remove('hidden');
+            const uid = currentUser.uid;
+            progressText.textContent = 'Uploading ID front...';
+            const frontRef = storage.ref(`kyc/${uid}/id-front`);
+            await frontRef.put(frontFile);
+            const frontUrl = await frontRef.getDownloadURL();
+            let backUrl = null;
+            if (backFile) { progressText.textContent = 'Uploading ID back...'; const backRef = storage.ref(`kyc/${uid}/id-back`); await backRef.put(backFile); backUrl = await backRef.getDownloadURL(); }
+            progressText.textContent = 'Uploading selfie...';
+            const selfieRef = storage.ref(`kyc/${uid}/selfie`);
+            await selfieRef.put(selfieFile);
+            const selfieUrl = await selfieRef.getDownloadURL();
+            progressText.textContent = 'Saving your submission...';
+            await db.collection('kyc').doc(uid).set({ userId: uid, userName: userData.name || currentUser.email, userEmail: currentUser.email, idType, nin, bvn, idFrontUrl: frontUrl, idBackUrl: backUrl||null, selfieUrl, status: 'pending', submittedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            await db.collection('users').doc(uid).update({ kycStatus: 'submitted' });
+            btn.disabled = false; btn.textContent = 'SUBMIT FOR VERIFICATION';
+            progress.classList.add('hidden');
+            hideKYCModal();
+            document.getElementById('kyc-alert').style.display = 'none';
+            showToast('KYC documents submitted! Admin will review within 24 hours.', 'success');
+        }
+
+        // ==================== PROFILE MODAL ====================
+        function showProfileModal() {
+            document.body.insertAdjacentHTML('beforeend', `
+                <div onclick="this.remove()" class="fixed inset-0 bg-black/70 flex items-center justify-center z-[70]">
+                    <div onclick="event.stopImmediatePropagation()" class="glass rounded-3xl w-full max-w-md mx-4 p-8 modal">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="font-bold text-2xl heading-font">My Profile</div>
+                            <button onclick="this.closest('.fixed').remove()" class="text-3xl text-purple-300">&times;</button>
+                        </div>
+                        <!-- Avatar display -->
+                        <div class="flex items-center gap-x-5 mb-6 pb-6 border-b border-purple-800">
+                            <div class="w-16 h-16 bg-gradient-to-br from-violet-600 to-purple-500 rounded-2xl flex items-center justify-center text-white font-bold text-2xl heading-font">${(userData.name||currentUser.email||'?').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                            <div>
+                                <div class="font-bold text-lg">${userData.name||'—'}</div>
+                                <div class="text-purple-300 text-sm">${userData.email||currentUser.email}</div>
+                                <div class="mt-1 inline-flex items-center gap-x-1.5 px-3 py-0.5 bg-violet-900/60 rounded-full text-xs text-violet-300">
+                                    <i class="fas fa-user-circle"></i><span>Member</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-4 text-sm">
+                            <div><label class="text-xs font-semibold text-purple-300">FULL NAME</label><input type="text" id="profile-name" value="${userData.name||''}" class="mt-1 w-full input-dash"></div>
+                            <div><label class="text-xs font-semibold text-purple-300">EMAIL</label><input type="email" value="${userData.email||currentUser.email}" disabled class="mt-1 w-full input-dash opacity-60 cursor-not-allowed"></div>
+                            <div><label class="text-xs font-semibold text-purple-300">PHONE</label><input type="tel" id="profile-phone" value="${userData.phone||''}" class="mt-1 w-full input-dash"></div>
+                        </div>
+                        <div class="mt-4 p-3 bg-violet-900/20 border border-violet-800 rounded-2xl text-xs text-purple-300">
+                            <i class="fas fa-shield-alt mr-1"></i> KYC Status: <strong class="text-white">${userData.kycStatus||'pending'}</strong> • Account: <strong class="text-white">${userData.status||'active'}</strong>
+                            • Balance: <strong class="text-emerald-400">₦${(userData.balance||0).toLocaleString()}</strong>
+                        </div>
+                        <div class="mt-8 flex gap-x-3">
+                            <button onclick="this.closest('.fixed').remove()" class="flex-1 py-3.5 border border-purple-700 rounded-2xl font-semibold">CANCEL</button>
+                            <button onclick="saveProfile(this)" class="flex-1 py-3.5 bg-violet-600 text-white font-bold rounded-2xl">SAVE CHANGES</button>
+                        </div>
+                    </div>
+                </div>`);
+        }
+
+        async function saveProfile(btn) {
+            const name = document.getElementById('profile-name').value.trim();
+            const phone = document.getElementById('profile-phone').value.trim();
+            btn.disabled = true; btn.innerHTML = '<span class="spinner mr-2"></span>';
+            await db.collection('users').doc(currentUser.uid).update({ name, phone });
+            btn.closest('.fixed').remove();
+            showToast('Profile updated!', 'success');
+        }
+
+        // ==================== PDF ====================
+        function downloadStatement() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(18); doc.text("TWITHA Contribution Plus", 20, 20);
+            doc.setFontSize(12); doc.text("Account Statement", 20, 28);
+            doc.text(`Generated for: ${userData.name||currentUser.email}`, 20, 36);
+            doc.text(`Email: ${currentUser.email} | Date: ${new Date().toLocaleDateString()}`, 20, 42);
+            doc.setFontSize(11);
+            doc.text(`Balance: ₦${(userData.balance||0).toLocaleString()}`, 20, 55);
+            doc.text(`Total Deposits: ₦${(userData.totalDeposit||0).toLocaleString()}`, 20, 62);
+            doc.text(`Total Withdrawn: ₦${(userData.totalWithdrawn||0).toLocaleString()}`, 20, 69);
+            doc.text("Recent Transactions:", 20, 82);
+            let y = 90;
+            doc.setFontSize(9);
+            transactions.slice(0,15).forEach(tx => {
+                if (y > 270) return;
+                const date = tx.createdAt ? new Date(tx.createdAt.toDate ? tx.createdAt.toDate() : tx.createdAt).toLocaleDateString('en-GB') : '';
+                const sign = tx.type==='withdrawal' ? '-' : '+';
+                doc.text(`${date}   ${(tx.description||tx.type||'').substring(0,45)}`, 20, y);
+                doc.text(`${sign}₦${(tx.amount||0).toLocaleString()}   [${tx.status}]`, 140, y);
+                y += 8;
+            });
+            doc.save(`TWITHA_Statement_${currentUser.uid.slice(-6)}.pdf`);
+            showToast('Statement downloaded!', 'success');
+        }
+
+        function downloadReceipt(txId) {
+            const tx = transactions.find(t => t.id === txId);
+            if (!tx) return;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(16); doc.text("TWITHA Contribution Plus", 20, 22);
+            doc.setFontSize(11); doc.text("OFFICIAL RECEIPT", 20, 30);
+            doc.setFontSize(10);
+            doc.text(`Receipt #: RCP-${txId.slice(-8).toUpperCase()}`, 20, 42);
+            const date = tx.createdAt ? new Date(tx.createdAt.toDate ? tx.createdAt.toDate() : tx.createdAt).toLocaleDateString('en-GB') : '';
+            doc.text(`Date: ${date}`, 20, 49);
+            doc.text(`Member: ${userData.name||currentUser.email}`, 20, 56);
+            doc.text("Description:", 20, 68); doc.text(tx.description||tx.type||'', 20, 75);
+            doc.setFontSize(13); doc.text(`Amount: ₦${(tx.amount||0).toLocaleString()}`, 20, 90);
+            doc.setFontSize(10); doc.text(`Status: ${tx.status||''}`, 20, 98);
+            doc.text("Thank you for using TWITHA Contribution Plus.", 20, 115);
+            doc.save(`Receipt_${txId.slice(-8)}.pdf`);
+        }
+
+        // ==================== SECTION NAV ====================
+        function showSection(section) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById(`section-${section}`);
+            if (target) target.classList.add('active');
+            document.querySelectorAll('[id^="dock-"]').forEach(d => d.classList.remove('active'));
+            const dock = document.getElementById(`dock-${section}`);
+            if (dock) dock.classList.add('active');
+            document.getElementById('notif-panel').classList.add('hidden');
+            if (section === 'activity') renderAllTransactions(currentFilter, true);
+            if (section === 'plans') renderPlans();
+            if (section === 'deposit') renderRecentDeposits();
+            if (section === 'wallet') { renderLinkedWallets(); }
+        }
+
+        // ==================== UTILS ====================
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => showToast('Copied!')).catch(() => { const i = document.createElement('input'); i.value=text; document.body.appendChild(i); i.select(); document.execCommand('copy'); document.body.removeChild(i); showToast('Copied!'); });
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            let colors = 'bg-emerald-600 text-white';
+            if (type === 'error') colors = 'bg-red-600 text-white';
+            if (type === 'info') colors = 'bg-slate-700 text-white';
+            toast.className = `${colors} px-6 py-3.5 rounded-2xl text-sm flex items-center gap-x-3 shadow-2xl max-w-xs`;
+            toast.innerHTML = `<div class="flex-1">${message}</div><button onclick="this.parentElement.remove()" class="opacity-70 hover:opacity-100"><i class="fas fa-times"></i></button>`;
+            container.appendChild(toast);
+            setTimeout(() => { if (toast.parentElement) toast.remove(); }, 4000);
+        }
+
+        document.getElementById('dock-home').classList.add('active');
+    </script>
+</body>
+</html>
