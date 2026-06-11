@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TWITHA • Contribution+</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+    <style>
+        html { scroll-behavior: smooth; }
+        html, body { margin: 0; padding: 0; overflow-x: hidden; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: #0f0a1f; color: #e2e8f0; padding-top: 80px; }
+        .heading-font { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 600; letter-spacing: -0.025em; }
+        .glass { background: rgba(30, 20, 60, 0.95); border: 1px solid rgba(124, 58, 237, 0.3); box-shadow: 0 10px 15px -3px rgb(124 58 237 / 0.15); }
+        .premium-gradient { background: linear-gradient(135deg, #a78bfa, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .purple-btn { background: linear-gradient(135deg, #7c3aed, #a855f7); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 10px 15px -3px rgb(124 58 237 / 0.3); }
+        .purple-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 20px -4px rgb(124 58 237 / 0.4); }
+        .section-header { font-size: 2.5rem; line-height: 1.1; font-weight: 700; letter-spacing: -0.03em; color: #f1e7ff; }
+        .fintech-card { transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; }
+        .fintech-card:hover { transform: translateY(-8px); box-shadow: 0 25px 50px -12px rgb(124 58 237 / 0.2); border-color: #c084fc; }
+        .stat-card { transition: all 0.3s ease; }
+        .faq-item { transition: all 0.3s ease; }
+        .faq-question { cursor: pointer; transition: all 0.3s ease; padding: 1.5rem 2rem; }
+        .faq-question:hover { background: rgba(124, 58, 237, 0.12); }
+        .faq-question.active { background: rgba(124, 58, 237, 0.18); color: #c084fc; }
+        .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.45s ease-out, padding 0.3s ease; padding-top: 0; padding-bottom: 0; padding-left: 2rem; padding-right: 2rem; }
+        .faq-answer.open { max-height: 2000px; padding-top: 1rem; padding-bottom: 1rem; }
+        .faq-icon { transition: transform 0.3s ease; }
+        .nav-link { transition: color 0.2s ease; }
+        .nav-link:hover { color: #c084fc; }
+        .drawer { transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
+        #back-to-top { position: fixed; bottom: 5.5rem; right: 1.5rem; z-index: 70; opacity: 0; visibility: hidden; transition: all 0.3s ease; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 1rem; background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; box-shadow: 0 10px 15px -3px rgb(124 58 237 / 0.3); border: 1px solid #a855f7; }
+        #back-to-top.show { opacity: 1 !important; visibility: visible !important; }
+        .whatsapp-float { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 60; background: #25D366; color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 15px -3px rgb(37 211 102 / 0.3); transition: all 0.3s ease; text-decoration: none; }
+        .whatsapp-float:hover { transform: scale(1.1); }
+        .auth-card { background: white; border-radius: 1.5rem; box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25); scrollbar-width: thin; }
+        .modal-logo { width: 88px; height: 88px; border-radius: 9999px; overflow: hidden; box-shadow: 0 10px 15px -3px rgb(124 58 237 / 0.3), 0 4px 6px -4px rgb(124 58 237 / 0.3); border: 4px solid #e0d4ff; }
+        .spinner { width: 22px; height: 22px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .input-field { width: 100%; padding: 0.875rem 1.25rem; border-radius: 1rem; border: 1px solid #d1d5db; color: #1f2937; font-size: 0.95rem; outline: none; transition: border-color 0.2s; }
+        .input-field:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
+        .input-field::placeholder { color: #9ca3af; }
+        .field-error { color: #ef4444; font-size: 0.75rem; margin-top: 0.25rem; display: none; }
+    </style>
+</head>
+<body>
+    <!-- NAVBAR -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-[#0f0a1f]/70 backdrop-blur-lg border-b border-purple-900/30 h-20">
+        <div class="max-w-7xl mx-auto px-6 h-full">
+            <div class="flex items-center justify-between h-full">
+                <div class="flex items-center gap-x-3">
+                    <div class="w-14 h-14 rounded-full overflow-hidden ring-2 ring-purple-400/70 shadow-lg flex-shrink-0 bg-white/5">
+                        <img src="roundlogo.jpg" alt="Twitha Logo" class="w-full h-full object-cover" onerror="this.outerHTML='<div class=\'w-full h-full bg-gradient-to-br from-purple-600 to-violet-500 flex items-center justify-center\'><span class=\'text-white font-bold text-3xl heading-font\'>T</span></div>'">
+                    </div>
+                    <div>
+                        <span class="text-3xl font-bold tracking-tighter heading-font text-white">TWITHA</span>
+                        <span class="text-sm font-semibold text-purple-400 align-super">Contribution+</span>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center gap-x-9 text-sm font-medium">
+                    <a href="#home" class="nav-link text-slate-300">Home</a>
+                    <a href="#banking" class="nav-link text-slate-300">Banking & Contribute</a>
+                    <a href="#services" class="nav-link text-slate-300">Services</a>
+                    <a href="#about" class="nav-link text-slate-300">About</a>
+                    <a href="#contact" class="nav-link text-slate-300">Contact</a>
+                </div>
+                <div class="hidden md:flex items-center gap-x-3">
+                    <button onclick="showLoginModal()" class="px-6 py-2.5 text-sm font-semibold rounded-2xl border border-purple-800 text-slate-300 hover:bg-purple-900/20 transition-all">Login</button>
+                    <button onclick="showRegisterModal()" class="px-7 py-2.5 text-sm font-semibold rounded-2xl purple-btn text-white">Become a Member</button>
+                </div>
+                <button onclick="toggleMobileMenu()" class="md:hidden w-11 h-11 flex items-center justify-center text-2xl text-white hover:bg-purple-900/30 rounded-2xl transition-colors">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MOBILE DRAWER -->
+    <div id="mobile-drawer" onclick="closeMobileDrawer()" class="hidden fixed inset-0 z-[60] bg-black/40">
+        <div onclick="event.stopImmediatePropagation()" class="drawer absolute right-0 top-0 h-full w-80 bg-[#1e143c] shadow-2xl flex flex-col">
+            <div class="bg-gradient-to-r from-purple-700 to-violet-600 text-white px-6 py-5 flex items-center justify-between">
+                <span class="text-2xl font-bold tracking-[1px] heading-font">TWITHA</span>
+                <button onclick="closeMobileDrawer()" class="text-3xl leading-none text-white/70 hover:text-white">×</button>
+            </div>
+            <div class="flex-1 px-6 py-8 text-lg">
+                <a href="#home" onclick="closeMobileDrawer()" class="flex items-center gap-x-4 py-4 text-white font-medium border-b border-purple-800"><i class="fa-solid fa-home w-5 text-purple-400"></i> Home</a>
+                <a href="#banking" onclick="closeMobileDrawer()" class="flex items-center gap-x-4 py-4 text-white font-medium border-b border-purple-800"><i class="fa-solid fa-wallet w-5 text-purple-400"></i> Banking & Contribute</a>
+                <a href="#services" onclick="closeMobileDrawer()" class="flex items-center gap-x-4 py-4 text-purple-400 font-semibold border-b border-purple-800"><i class="fa-solid fa-cogs w-5"></i> Services</a>
+                <a href="#about" onclick="closeMobileDrawer()" class="flex items-center gap-x-4 py-4 text-white font-medium border-b border-purple-800"><i class="fa-solid fa-info-circle w-5 text-purple-400"></i> About</a>
+                <a href="#contact" onclick="closeMobileDrawer()" class="flex items-center gap-x-4 py-4 text-white font-medium"><i class="fa-solid fa-map-marker-alt w-5 text-purple-400"></i> Contact</a>
+                <button onclick="showLoginModal(); closeMobileDrawer()" class="w-full mt-6 py-3 text-left text-white font-medium flex items-center gap-x-4"><i class="fa-solid fa-sign-in-alt w-5 text-purple-400"></i> Login</button>
+            </div>
+            <div class="p-6 border-t border-purple-800">
+                <button onclick="showRegisterModal(); closeMobileDrawer()" class="w-full py-3.5 rounded-2xl purple-btn text-white font-semibold text-sm">Become a Member</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HERO -->
+    <section id="home" class="max-w-6xl mx-auto px-6 pt-10 pb-16 text-center">
+        <h1 class="text-5xl md:text-6xl leading-[1.05] tracking-tighter font-bold heading-font mb-8 text-white">
+            Make Your Digital<br>Contributions Experience<br>
+            <span class="premium-gradient">Wonderful</span>
+        </h1>
+        <div class="mb-10">
+            <img src="image-2.jpg" alt="Twitha Contribution+ Banner" class="w-full max-w-5xl mx-auto rounded-3xl shadow-xl border border-purple-800/40" onerror="this.style.display='none'">
+        </div>
+        <div class="inline-flex items-center gap-x-2 px-5 py-1.5 rounded-3xl bg-purple-900/30 text-purple-300 text-sm font-medium mb-6">
+            <i class="fa-solid fa-check"></i>
+            <span>Trusted by 3,000+ Nigerians</span>
+        </div>
+        <p class="max-w-2xl mx-auto text-xl text-slate-300 mb-10">
+            Save consistently. Build financial discipline. Access contribution-based credit.<br>
+            Grow wealth with Nigeria's modern digital thrift platform.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <button onclick="showRegisterModal()" class="px-9 py-4 text-lg font-semibold rounded-3xl purple-btn text-white flex items-center justify-center gap-x-3">
+                Become a Member
+            </button>
+            <button onclick="showLoginModal()" class="px-9 py-4 text-lg font-semibold rounded-3xl border border-purple-700 text-slate-300 hover:bg-purple-900/20 transition-all">
+                Login (Existing Users)
+            </button>
+        </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="max-w-6xl mx-auto px-6 pb-16">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            <div class="stat-card glass p-7 rounded-3xl text-center border border-purple-800">
+                <div class="text-4xl md:text-5xl font-bold tracking-tighter text-white stat-number" data-target="150" data-suffix="M+">0</div>
+                <div class="text-purple-400 mt-2 text-sm font-semibold">Contributions</div>
+            </div>
+            <div class="stat-card glass p-7 rounded-3xl text-center border border-purple-800">
+                <div class="text-4xl md:text-5xl font-bold tracking-tighter text-white stat-number" data-target="300" data-suffix="+">0</div>
+                <div class="text-purple-400 mt-2 text-sm font-semibold">Active Users</div>
+            </div>
+            <div class="stat-card glass p-7 rounded-3xl text-center border border-purple-800">
+                <div class="text-4xl md:text-5xl font-bold tracking-tighter text-white stat-number" data-target="5">0</div>
+                <div class="text-purple-400 mt-2 text-sm font-semibold">Core Services</div>
+            </div>
+            <div class="stat-card glass p-7 rounded-3xl text-center border border-purple-800">
+                <div class="text-4xl md:text-5xl font-bold tracking-tighter text-white">24/7</div>
+                <div class="text-purple-400 mt-2 text-sm font-semibold">Dedicated Support</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BANKING & CONTRIBUTE -->
+    <section id="banking" class="max-w-6xl mx-auto px-6 py-16">
+        <div class="text-center mb-12">
+            <h2 class="section-header">Banking &amp; Contribute</h2>
+            <p class="mt-3 text-slate-300 max-w-md mx-auto">Simple, secure, and consistent contribution experience.</p>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6">
+            <div class="fintech-card glass p-8 rounded-3xl border border-purple-800">
+                <i class="fa-solid fa-wallet text-4xl text-purple-400 mb-6"></i>
+                <h3 class="font-semibold text-2xl mb-3 text-white">Secure Digital Wallet</h3>
+                <p class="text-slate-300">Manage all your contributions and withdrawals in one secure place.</p>
+            </div>
+            <div class="fintech-card glass p-8 rounded-3xl border border-purple-800">
+                <i class="fa-solid fa-sync text-4xl text-purple-400 mb-6"></i>
+                <h3 class="font-semibold text-2xl mb-3 text-white">Flexible Plans</h3>
+                <p class="text-slate-300">Daily, weekly or monthly contributions that fit your income rhythm.</p>
+            </div>
+            <div class="fintech-card glass p-8 rounded-3xl border border-purple-800">
+                <i class="fa-solid fa-handshake text-4xl text-purple-400 mb-6"></i>
+                <h3 class="font-semibold text-2xl mb-3 text-white">Contribution-Based Loans</h3>
+                <p class="text-slate-300">Access credit based on your consistent saving history.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SERVICES -->
+    <section id="services" class="max-w-7xl mx-auto px-6 py-16 bg-purple-900/10 rounded-3xl relative overflow-hidden">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="section-header">Our Services</h2>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="fintech-card glass p-8 rounded-3xl border border-purple-700 hover:border-purple-500">
+                    <i class="fa-solid fa-lock text-4xl text-purple-400 mb-6"></i>
+                    <h3 class="font-semibold text-2xl mb-3 text-white">Secure Payments</h3>
+                    <p class="text-slate-300">Bank-grade security for all transactions.</p>
+                </div>
+                <div class="fintech-card glass p-8 rounded-3xl border border-purple-700 hover:border-purple-500">
+                    <i class="fa-solid fa-piggy-bank text-4xl text-purple-400 mb-6"></i>
+                    <h3 class="font-semibold text-2xl mb-3 text-white">Digital Contributions</h3>
+                    <p class="text-slate-300">Daily, weekly &amp; monthly savings made effortless.</p>
+                </div>
+                <div class="fintech-card glass p-8 rounded-3xl border border-purple-700 hover:border-purple-500">
+                    <i class="fa-solid fa-mobile-alt text-4xl text-purple-400 mb-6"></i>
+                    <h3 class="font-semibold text-2xl mb-3 text-white">VTU Earnings Portal</h3>
+                    <p class="text-slate-300">Earn while you top up airtime and data.</p>
+                </div>
+                <div class="fintech-card glass p-8 rounded-3xl border border-purple-700 hover:border-purple-500">
+                    <i class="fa-solid fa-headset text-4xl text-purple-400 mb-6"></i>
+                    <h3 class="font-semibold text-2xl mb-3 text-white">24/7 Support</h3>
+                    <p class="text-slate-300">Always available when you need us.</p>
+                </div>
+                <div class="fintech-card glass p-8 rounded-3xl border border-purple-700 hover:border-purple-500">
+                    <i class="fa-solid fa-chart-line text-4xl text-purple-400 mb-6"></i>
+                    <h3 class="font-semibold text-2xl mb-3 text-white">Loan Access System</h3>
+                    <p class="text-slate-300">Grow your contributions and unlock credit.</p>
+                </div>
+                <div class="fintech-card glass p-8 rounded-3xl border border-purple-700 hover:border-purple-500">
+                    <i class="fa-solid fa-university text-4xl text-purple-400 mb-6"></i>
+                    <h3 class="font-semibold text-2xl mb-3 text-white">Online Banking</h3>
+                    <p class="text-slate-300">Full control of your finances anytime.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section id="about" class="max-w-5xl mx-auto px-6 py-20 text-center">
+        <h2 class="section-header mb-6">About Twitha Contribution+</h2>
+        <p class="max-w-3xl mx-auto text-xl text-slate-300">Twitha Contribution Plus is a digital thrift system that helps users save daily, weekly, and monthly while accessing structured financial services like loans, withdrawals, and wallet management.</p>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section class="max-w-6xl mx-auto px-6 py-16">
+        <div class="text-center mb-12">
+            <h2 class="section-header">Real Stories from Our Members</h2>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6">
+            <div class="fintech-card glass p-8 rounded-3xl border border-purple-800">
+                <div class="flex items-center gap-x-4 mb-6">
+                    <img src="eric.png" class="w-12 h-12 rounded-full ring-2 ring-purple-700 object-cover" alt="Chinedu" onerror="this.outerHTML='<div class=\'w-12 h-12 rounded-full ring-2 ring-purple-700 bg-gradient-to-br from-purple-600 to-violet-500 flex items-center justify-center\'><span class=\'text-white font-bold\'>C</span></div>'">
+                    <div><div class="font-semibold text-white">Chinedu Okafor</div><div class="text-sm text-slate-400">Lagos</div></div>
+                </div>
+                <p class="text-slate-300">"Twitha has helped me stay disciplined with my savings. I built a solid emergency fund and accessed a loan when I needed it most."</p>
+            </div>
+            <div class="fintech-card glass p-8 rounded-3xl border border-purple-800">
+                <div class="flex items-center gap-x-4 mb-6">
+                    <img src="ayo.png" class="w-12 h-12 rounded-full ring-2 ring-purple-700 object-cover" alt="Aisha" onerror="this.outerHTML='<div class=\'w-12 h-12 rounded-full ring-2 ring-purple-700 bg-gradient-to-br from-violet-600 to-purple-500 flex items-center justify-center\'><span class=\'text-white font-bold\'>A</span></div>'">
+                    <div><div class="font-semibold text-white">Ayo Ayoomide</div><div class="text-sm text-slate-400">Abuja</div></div>
+                </div>
+                <p class="text-slate-300">"The platform is simple and transparent. I love how I can track everything and the support team is always responsive."</p>
+            </div>
+            <div class="fintech-card glass p-8 rounded-3xl border border-purple-800">
+                <div class="flex items-center gap-x-4 mb-6">
+                    <img src="f.png" class="w-12 h-12 rounded-full ring-2 ring-purple-700 object-cover" alt="Emeka" onerror="this.outerHTML='<div class=\'w-12 h-12 rounded-full ring-2 ring-purple-700 bg-gradient-to-br from-purple-700 to-pink-500 flex items-center justify-center\'><span class=\'text-white font-bold\'>E</span></div>'">
+                    <div><div class="font-semibold text-white">Emeka Nwosu</div><div class="text-sm text-slate-400">Port Harcourt</div></div>
+                </div>
+                <p class="text-slate-300">"I started with small weekly contributions and now I'm on track to achieve my major financial goals. Highly recommended."</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="max-w-4xl mx-auto px-6 py-16">
+        <div class="text-center mb-12">
+            <h2 class="section-header">Frequently Asked Questions</h2>
+            <p class="mt-3 text-slate-300">Click any question to reveal the answer</p>
+        </div>
+        <div class="space-y-4">
+            <div class="fintech-card glass border border-purple-800 rounded-3xl overflow-hidden faq-item">
+                <div onclick="toggleFAQ(this)" class="faq-question flex justify-between items-center font-semibold text-lg text-white" tabindex="0">
+                    <span>How to register to the website?</span>
+                    <i class="faq-icon fa-solid fa-chevron-down text-purple-400 text-xl"></i>
+                </div>
+                <div class="faq-answer text-slate-300">Kindly join Twitha Contribution Plus by clicking <a href="#" onclick="showRegisterModal(); return false;" class="text-purple-400 underline">HERE</a></div>
+            </div>
+            <div class="fintech-card glass border border-purple-800 rounded-3xl overflow-hidden faq-item">
+                <div onclick="toggleFAQ(this)" class="faq-question flex justify-between items-center font-semibold text-lg text-white" tabindex="0">
+                    <span>What's the document required for KYC?</span>
+                    <i class="faq-icon fa-solid fa-chevron-down text-purple-400 text-xl"></i>
+                </div>
+                <div class="faq-answer text-slate-300">Twitha Contribution Plus account verification requires a valid ID card (National ID / NIN Slip, Driver's License, International Passport, or Voter's Card).</div>
+            </div>
+            <div class="fintech-card glass border border-purple-800 rounded-3xl overflow-hidden faq-item">
+                <div onclick="toggleFAQ(this)" class="faq-question flex justify-between items-center font-semibold text-lg text-white" tabindex="0">
+                    <span>How to view the transaction history?</span>
+                    <i class="faq-icon fa-solid fa-chevron-down text-purple-400 text-xl"></i>
+                </div>
+                <div class="faq-answer text-slate-300">1. Login to your account via the homepage<br>2. You will be redirected to your dashboard<br>3. Tap the Activity tab at the bottom navigation<br>4. All your transactions appear here with full details</div>
+            </div>
+            <div class="fintech-card glass border border-purple-800 rounded-3xl overflow-hidden faq-item">
+                <div onclick="toggleFAQ(this)" class="faq-question flex justify-between items-center font-semibold text-lg text-white" tabindex="0">
+                    <span>Can I get a loan with no interest?</span>
+                    <i class="faq-icon fa-solid fa-chevron-down text-purple-400 text-xl"></i>
+                </div>
+                <div class="faq-answer text-slate-300">Yes! But you must first be a registered member of Twitha Contribution Plus and have a consistent contribution history to qualify.</div>
+            </div>
+            <div class="fintech-card glass border border-purple-800 rounded-3xl overflow-hidden faq-item">
+                <div onclick="toggleFAQ(this)" class="faq-question flex justify-between items-center font-semibold text-lg text-white" tabindex="0">
+                    <span>How much time does the verification process take?</span>
+                    <i class="faq-icon fa-solid fa-chevron-down text-purple-400 text-xl"></i>
+                </div>
+                <div class="faq-answer text-slate-300">It takes just a few minutes to submit. Admin review is typically completed within 24 hours.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- VISIT OUR OFFICE + MAP -->
+    <section id="contact" class="max-w-6xl mx-auto px-6 py-16">
+        <div class="text-center mb-10">
+            <h2 class="section-header">Visit Our Office</h2>
+            <p class="mt-3 text-slate-300">We're located in the heart of Lekki, Lagos.</p>
+        </div>
+        <div class="glass rounded-3xl p-8 md:p-10 border border-purple-800">
+            <div class="grid md:grid-cols-5 gap-8">
+                <div class="md:col-span-2">
+                    <div class="font-semibold text-xl mb-2 text-white">Twitha Contribution Plus</div>
+                    <div class="text-slate-300 leading-relaxed mb-6">No 2 Dele Amuda Street, Ilasan<br>Lekki Ajah, Lagos State, Nigeria</div>
+                    <div class="text-sm space-y-2 text-slate-400">
+                        <div><i class="fa-solid fa-envelope mr-2 text-purple-400"></i> info@twithacontributionplus.com</div>
+                        <div><i class="fa-solid fa-phone mr-2 text-purple-400"></i> +234 706 577 4786</div>
+                    </div>
+                </div>
+                <div class="md:col-span-3">
+                    <div class="rounded-2xl overflow-hidden border border-purple-700 shadow">
+                        <iframe src="https://www.google.com/maps?q=No+2+Dele+Amuda+Street+Ilasan+Lekki+Ajah+Lagos+Nigeria&output=embed" width="100%" height="320" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONTACT FORM -->
+    <section class="max-w-3xl mx-auto px-6 py-16">
+        <div class="text-center mb-10">
+            <h2 class="section-header">Get in Touch</h2>
+            <p class="mt-3 text-slate-300">We'd love to hear from you. Send us a message and we'll reply shortly.</p>
+        </div>
+        <div class="bg-white rounded-3xl p-8 shadow-xl">
+            <form id="contact-form" onsubmit="sendContactForm(event)">
+                <div class="space-y-5">
+                    <input type="text" id="contact-name" placeholder="Your Name" required class="input-field">
+                    <input type="email" id="contact-email" placeholder="Your Email" required class="input-field">
+                    <input type="text" id="contact-subject" placeholder="Subject" required class="input-field">
+                    <textarea id="contact-message" placeholder="Message" rows="5" required class="input-field resize-y"></textarea>
+                </div>
+                <button type="submit" class="mt-6 w-full bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white font-semibold py-4 rounded-2xl flex items-center justify-center gap-x-2 transition-all">
+                    Send Message <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" onclick="if (event.target.id === 'login-modal') hideLoginModal()" class="hidden fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-4 overflow-y-auto">
+        <div onclick="event.stopImmediatePropagation()" class="auth-card w-full max-w-md p-6 md:p-8 relative max-h-[90vh] overflow-y-auto">
+            <button onclick="hideLoginModal()" class="absolute top-5 right-5 text-3xl text-gray-400 hover:text-gray-600 transition-colors leading-none">×</button>
+            <div class="flex justify-center mb-6">
+                <div class="modal-logo">
+                    <img src="roundlogo.jpg" alt="Twitha Logo" class="w-full h-full object-cover" onerror="this.outerHTML='<div class=\'w-full h-full bg-gradient-to-br from-purple-600 to-violet-500 flex items-center justify-center\'><span class=\'text-purple-900 font-bold text-4xl heading-font\'>T</span></div>'">
+                </div>
+            </div>
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-1 heading-font">Welcome Back</h2>
+            <p class="text-center text-gray-500 mb-7">Login to continue your contribution journey</p>
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
+                        <input id="login-email" type="email" placeholder="you@example.com" required class="input-field">
+                        <div id="login-email-error" class="field-error"></div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+                        <div class="relative">
+                            <input id="login-password" type="password" placeholder="••••••••" required class="input-field pr-12">
+                            <button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                        <div id="login-password-error" class="field-error"></div>
+                    </div>
+                </div>
+                <div id="login-general-error" class="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm hidden"></div>
+                <button type="submit" id="login-submit-btn" class="mt-6 w-full purple-btn text-white font-semibold py-4 rounded-2xl flex items-center justify-center gap-x-2 text-base">
+                    Login to Dashboard
+                </button>
+                <div class="text-center mt-5 text-sm">
+                    <span class="text-gray-500">Don't have an account?</span>
+                    <span onclick="hideLoginModal(); showRegisterModal()" class="text-purple-600 font-semibold cursor-pointer hover:underline ml-1">Create one now</span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- REGISTER MODAL -->
+    <div id="register-modal" onclick="if (event.target.id === 'register-modal') hideRegisterModal()" class="hidden fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-4 overflow-y-auto">
+        <div onclick="event.stopImmediatePropagation()" class="auth-card w-full max-w-md p-6 md:p-8 relative max-h-[90vh] overflow-y-auto">
+            <button onclick="hideRegisterModal()" class="absolute top-5 right-5 text-3xl text-gray-400 hover:text-gray-600 transition-colors leading-none">×</button>
+            <div class="flex justify-center mb-5">
+                <div class="modal-logo">
+                    <img src="roundlogo.jpg" alt="Twitha Logo" class="w-full h-full object-cover" onerror="this.outerHTML='<div class=\'w-full h-full bg-gradient-to-br from-purple-600 to-violet-500 flex items-center justify-center\'><span class=\'text-purple-900 font-bold text-4xl heading-font\'>T</span></div>'">
+                </div>
+            </div>
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-1 heading-font">Join Twitha Today</h2>
+            <p class="text-center text-gray-500 mb-6">Start your smart saving journey</p>
+            <form id="register-form" onsubmit="handleRegister(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+                        <input id="reg-fullname" type="text" placeholder="Chinedu Okafor" required class="input-field">
+                        <div id="reg-name-error" class="field-error"></div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
+                            <input id="reg-email" type="email" placeholder="you@example.com" required class="input-field">
+                            <div id="reg-email-error" class="field-error"></div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Phone Number</label>
+                            <input id="reg-phone" type="tel" placeholder="+234 801 234 5678" required class="input-field">
+                            <div id="reg-phone-error" class="field-error"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+                        <div class="relative">
+                            <input id="reg-password" type="password" placeholder="Create a strong password (min. 6 chars)" required class="input-field pr-12">
+                            <button type="button" onclick="togglePasswordVisibility('reg-password', this)" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                        <div id="reg-password-error" class="field-error"></div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Confirm Password</label>
+                        <input id="reg-confirm-password" type="password" placeholder="Re-enter your password" required class="input-field">
+                        <div id="reg-confirm-error" class="field-error"></div>
+                    </div>
+                </div>
+                <div id="reg-general-error" class="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm hidden"></div>
+                <button type="submit" id="reg-submit-btn" class="mt-6 w-full purple-btn text-white font-semibold py-4 rounded-2xl flex items-center justify-center gap-x-2 text-base">
+                    Create My Account
+                </button>
+                <div class="text-center mt-5 text-sm">
+                    <span class="text-gray-500">Already have an account?</span>
+                    <span onclick="hideRegisterModal(); showLoginModal()" class="text-purple-600 font-semibold cursor-pointer hover:underline ml-1">Login here</span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- PRIVACY POLICY MODAL -->
+    <div id="privacy-modal" onclick="if (event.target.id === 'privacy-modal') hidePrivacyModal()" class="hidden fixed inset-0 z-[90] flex items-center justify-center bg-black/70 p-4">
+        <div onclick="event.stopImmediatePropagation()" class="auth-card w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between px-8 py-5 border-b">
+                <h2 class="text-2xl font-bold text-gray-800 heading-font">Privacy Policy</h2>
+                <button onclick="hidePrivacyModal()" class="text-3xl text-gray-400 hover:text-gray-600 leading-none">×</button>
+            </div>
+            <div class="p-8 overflow-y-auto text-sm text-gray-700 leading-relaxed space-y-5">
+                <p class="text-xs text-gray-500">Last updated: June 2026</p>
+                <div><h3 class="font-semibold text-gray-800 mb-2">1. Information We Collect</h3><p>We collect personal information you provide when registering, including your full name, phone number, email, BVN, valid ID, and bank details for KYC compliance.</p></div>
+                <div><h3 class="font-semibold text-gray-800 mb-2">2. How We Use Your Information</h3><p>Your data is used to provide and improve our thrift and contribution services, process transactions, assess loan eligibility, send important notifications, prevent fraud, and comply with Nigerian financial regulations.</p></div>
+                <div><h3 class="font-semibold text-gray-800 mb-2">3. Data Sharing &amp; Disclosure</h3><p>We may share your information with trusted partners such as banks, payment processors, and regulatory authorities when required by law. We do not sell your personal data to third parties.</p></div>
+                <div><h3 class="font-semibold text-gray-800 mb-2">4. Data Security</h3><p>We use bank-grade encryption, secure servers, and regular security audits to protect your information.</p></div>
+                <div><h3 class="font-semibold text-gray-800 mb-2">5. Your Rights</h3><p>You have the right to access, correct, or request deletion of your personal data. Contact us at <span class="text-purple-600">info@twithacontributionplus.com</span>.</p></div>
+                <p class="pt-4 text-xs text-gray-500">For any privacy concerns, please email us at info@twithacontributionplus.com.</p>
+            </div>
+            <div class="px-8 py-4 border-t bg-gray-50 text-center">
+                <button onclick="hidePrivacyModal()" class="px-8 py-2.5 text-sm font-semibold rounded-2xl border border-gray-300 hover:bg-gray-100">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TERMS MODAL -->
+    <div id="terms-modal" onclick="if (event.target.id === 'terms-modal') hideTermsModal()" class="hidden fixed inset-0 z-[90] flex items-center justify-center bg-black/70 p-4">
+        <div onclick="event.stopImmediatePropagation()" class="auth-card w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between px-8 py-5 border-b">
+                <h2 class="text-2xl font-bold text-gray-800 heading-font">Terms of Service</h2>
+                <button onclick="hideTermsModal()" class="text-3xl text-gray-400 hover:text-gray-600 leading-none">×</button>
+            </div>
+            <div class="p-8 overflow-y-auto text-sm text-gray-700 leading-relaxed space-y-5">
+                <p class="text-xs text-gray-500">Last updated: June 2026</p>
+                <div><h3 class="font-semibold text-gray-800 mb-2">1. Eligibility</h3><p>You must be at least 18 years old and a resident of Nigeria to use Twitha Contribution+.</p></div>
+                <div><h3 class="font-semibold text-gray-800 mb-2">2. Account &amp; Responsibilities</h3><p>You are responsible for maintaining the confidentiality of your password and all activities under your account.</p></div>
+                <div><h3 class="font-semibold text-gray-800 mb-2">3. Contributions &amp; Loans</h3><p>All contributions must be made through approved channels. Loans are subject to approval based on your contribution history.</p></div>
+                <div><h3 class="font-semibold text-gray-800 mb-2">4. Governing Law</h3><p>These Terms are governed by the laws of the Federal Republic of Nigeria.</p></div>
+                <p class="pt-4 text-xs text-gray-500">By using Twitha Contribution+, you agree to these Terms of Service and our Privacy Policy.</p>
+            </div>
+            <div class="px-8 py-4 border-t bg-gray-50 text-center">
+                <button onclick="hideTermsModal()" class="px-8 py-2.5 text-sm font-semibold rounded-2xl border border-gray-300 hover:bg-gray-100">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BACK TO TOP -->
+    <div id="back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+        <i class="fa-solid fa-arrow-up text-lg"></i>
+    </div>
+
+    <!-- WHATSAPP FLOAT -->
+    <a href="https://wa.me/2347065774786" target="_blank" class="whatsapp-float">
+        <i class="fa-brands fa-whatsapp text-3xl"></i>
+    </a>
+
+    <!-- FOOTER -->
+    <footer class="bg-[#0a0618] border-t border-purple-900/40 pt-12 pb-8">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="grid md:grid-cols-4 gap-y-10">
+                <div>
+                    <div class="flex items-center gap-x-3 mb-4">
+                        <div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-purple-400/60">
+                            <img src="roundlogo.jpg" alt="Twitha Logo" class="w-full h-full object-cover" onerror="this.outerHTML='<div class=\'w-full h-full bg-gradient-to-br from-purple-600 to-violet-500 flex items-center justify-center\'><span class=\'text-white font-bold text-xl heading-font\'>T</span></div>'">
+                        </div>
+                        <span class="text-2xl font-bold tracking-tighter heading-font text-white">TWITHA</span>
+                    </div>
+                    <p class="text-sm text-slate-400 max-w-[220px]">Nigeria's modern digital thrift platform. Save. Grow. Access credit.</p>
+                </div>
+                <div>
+                    <div class="font-semibold text-white mb-4">Quick Links</div>
+                    <div class="space-y-2 text-sm">
+                        <a href="#home" class="block text-slate-400 hover:text-purple-300 transition">Home</a>
+                        <a href="#banking" class="block text-slate-400 hover:text-purple-300 transition">Banking & Contribute</a>
+                        <a href="#services" class="block text-slate-400 hover:text-purple-300 transition">Services</a>
+                        <a href="#about" class="block text-slate-400 hover:text-purple-300 transition">About Us</a>
+                    </div>
+                </div>
+                <div>
+                    <div class="font-semibold text-white mb-4">Support</div>
+                    <div class="space-y-2 text-sm">
+                        <a href="#contact" class="block text-slate-400 hover:text-purple-300 transition">Contact Us</a>
+                        <a href="#" onclick="showRegisterModal(); return false;" class="block text-slate-400 hover:text-purple-300 transition">Become a Member</a>
+                        <a href="#" onclick="showLoginModal(); return false;" class="block text-slate-400 hover:text-purple-300 transition">Login</a>
+                        <div class="pt-1 text-purple-400">+234 706 577 4786</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="font-semibold text-white mb-4">Our Office</div>
+                    <div class="text-sm text-slate-400 leading-relaxed">No 2 Dele Amuda Street, Ilasan<br>Lekki Ajah, Lagos State, Nigeria<br><br><span class="text-purple-400">info@twithacontributionplus.com</span></div>
+                </div>
+            </div>
+            <div class="mt-12 pt-8 border-t border-purple-900/40 flex flex-col md:flex-row items-center justify-between gap-y-4 text-xs text-slate-500">
+                <div>© 2026 Twitha Contribution+ • All Rights Reserved</div>
+                <div class="flex items-center gap-x-5">
+                    <span onclick="showPrivacyModal()" class="hover:text-purple-300 cursor-pointer">Privacy Policy</span>
+                    <span onclick="showTermsModal()" class="hover:text-purple-300 cursor-pointer">Terms of Service</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- TOAST -->
+    <div id="toast-container" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[99] flex flex-col gap-y-2 items-center pointer-events-none"></div>
+
+    <script>
+        // ==================== FIREBASE INIT ====================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBo0OV2eZY8yoAoilOelL04s1WYxlwcZ_c",
+            authDomain: "twitha-contributions.firebaseapp.com",
+            projectId: "twitha-contributions",
+            storageBucket: "twitha-contributions.firebasestorage.app",
+            messagingSenderId: "888884814076",
+            appId: "1:888884814076:web:9037c293b440f941627779"
+        };
+
+        let app, auth, db;
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+            db = firebase.firestore();
+            console.log('%c[TWITHA] Firebase initialized', 'color:#a78bfa');
+        } catch(e) {
+            console.warn('[TWITHA] Firebase init error:', e);
+        }
+
+        // ==================== AUTH STATE — redirect if already logged in ====================
+        if (auth) {
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    try {
+                        const snap = await db.collection('users').doc(user.uid).get();
+                        if (snap.exists) {
+                            const data = snap.data();
+                            if (data.role === 'admin' || data.role === 'subadmin') {
+                                window.location.href = 'admin-dashboard.html';
+                            } else {
+                                window.location.href = 'dashboard.html';
+                            }
+                        }
+                    } catch(e) {}
+                }
+            });
+        }
+
+        // ==================== MOBILE MENU ====================
+        function toggleMobileMenu() {
+            const drawer = document.getElementById('mobile-drawer');
+            drawer.classList.contains('hidden') ? (drawer.classList.remove('hidden'), drawer.classList.add('flex')) : (drawer.classList.remove('flex'), drawer.classList.add('hidden'));
+        }
+        function closeMobileDrawer() {
+            const drawer = document.getElementById('mobile-drawer');
+            drawer.classList.remove('flex');
+            drawer.classList.add('hidden');
+        }
+
+        // ==================== FAQ ====================
+        function toggleFAQ(element) {
+            const answer = element.nextElementSibling;
+            const icon = element.querySelector('.faq-icon');
+            const isOpen = answer.classList.contains('open');
+            document.querySelectorAll('.faq-answer').forEach(el => {
+                if (el !== answer) {
+                    el.classList.remove('open');
+                    el.style.maxHeight = '0px';
+                    el.style.paddingTop = '0';
+                    el.style.paddingBottom = '0';
+                    const q = el.previousElementSibling;
+                    if (q) q.classList.remove('active');
+                    const oi = q ? q.querySelector('.faq-icon') : null;
+                    if (oi) { oi.classList.remove('fa-chevron-up'); oi.classList.add('fa-chevron-down'); }
+                }
+            });
+            if (isOpen) {
+                answer.style.maxHeight = '0px'; answer.style.paddingTop = '0'; answer.style.paddingBottom = '0';
+                answer.classList.remove('open'); element.classList.remove('active');
+                icon.classList.remove('fa-chevron-up'); icon.classList.add('fa-chevron-down');
+            } else {
+                answer.classList.add('open'); answer.style.paddingTop = '1rem'; answer.style.paddingBottom = '1.25rem'; answer.style.maxHeight = '3000px';
+                element.classList.add('active'); icon.classList.remove('fa-chevron-down'); icon.classList.add('fa-chevron-up');
+            }
+        }
+
+        // ==================== CONTACT FORM ====================
+        function sendContactForm(e) {
+            e.preventDefault();
+            const name = document.getElementById('contact-name').value;
+            const email = document.getElementById('contact-email').value;
+            const subject = document.getElementById('contact-subject').value;
+            const message = document.getElementById('contact-message').value;
+            const mailtoLink = `mailto:info@twithacontributionplus.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`)}`;
+            window.location.href = mailtoLink;
+            setTimeout(() => { showToast("Thank you! Your email client has opened."); document.getElementById('contact-form').reset(); }, 800);
+        }
+
+        // ==================== MODAL HELPERS ====================
+        function showLoginModal() { const m = document.getElementById('login-modal'); m.classList.remove('hidden'); m.classList.add('flex'); clearLoginErrors(); }
+        function hideLoginModal() { const m = document.getElementById('login-modal'); m.classList.remove('flex'); m.classList.add('hidden'); }
+        function showRegisterModal() { const m = document.getElementById('register-modal'); m.classList.remove('hidden'); m.classList.add('flex'); clearRegisterErrors(); }
+        function hideRegisterModal() { const m = document.getElementById('register-modal'); m.classList.remove('flex'); m.classList.add('hidden'); }
+        function showPrivacyModal() { const m = document.getElementById('privacy-modal'); m.classList.remove('hidden'); m.classList.add('flex'); }
+        function hidePrivacyModal() { const m = document.getElementById('privacy-modal'); m.classList.remove('flex'); m.classList.add('hidden'); }
+        function showTermsModal() { const m = document.getElementById('terms-modal'); m.classList.remove('hidden'); m.classList.add('flex'); }
+        function hideTermsModal() { const m = document.getElementById('terms-modal'); m.classList.remove('flex'); m.classList.add('hidden'); }
+
+        function clearLoginErrors() {
+            ['login-email-error','login-password-error','login-general-error'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) { el.style.display = 'none'; el.textContent = ''; }
+            });
+        }
+        function clearRegisterErrors() {
+            ['reg-name-error','reg-email-error','reg-phone-error','reg-password-error','reg-confirm-error','reg-general-error'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) { el.style.display = 'none'; el.textContent = ''; }
+            });
+        }
+        function showFieldError(id, msg) {
+            const el = document.getElementById(id);
+            if(el) { el.textContent = msg; el.style.display = 'block'; }
+        }
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if(input.type === 'password') { input.type = 'text'; icon.classList.replace('fa-eye','fa-eye-slash'); }
+            else { input.type = 'password'; icon.classList.replace('fa-eye-slash','fa-eye'); }
+        }
+
+        // ==================== FIREBASE LOGIN ====================
+        async function handleLogin(e) {
+            e.preventDefault();
+            clearLoginErrors();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const btn = document.getElementById('login-submit-btn');
+
+            if (!email) { showFieldError('login-email-error', 'Email is required'); return; }
+            if (!password) { showFieldError('login-password-error', 'Password is required'); return; }
+            if (password.length < 6) { showFieldError('login-password-error', 'Password must be at least 6 characters'); return; }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Signing in...';
+
+            if (!auth) { showToast('Firebase not available', 'error'); btn.disabled = false; btn.innerHTML = 'Login to Dashboard'; return; }
+
+            try {
+                const cred = await auth.signInWithEmailAndPassword(email, password);
+                const snap = await db.collection('users').doc(cred.user.uid).get();
+                if (!snap.exists) throw { code: 'auth/user-doc-not-found' };
+                const userData = snap.data();
+                showToast('Login successful! Redirecting...');
+                setTimeout(() => {
+                    if (userData.role === 'admin' || userData.role === 'subadmin') {
+                        window.location.href = 'admin-dashboard.html';
+                    } else {
+                        window.location.href = 'dashboard.html';
+                    }
+                }, 800);
+            } catch(err) {
+                btn.disabled = false;
+                btn.innerHTML = 'Login to Dashboard';
+                let msg = 'Login failed. Please try again.';
+                if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') msg = 'Invalid email or password. Please check your details.';
+                else if (err.code === 'auth/too-many-requests') msg = 'Too many failed attempts. Please try again later.';
+                else if (err.code === 'auth/user-doc-not-found') msg = 'Account not properly set up. Please contact support.';
+                const errEl = document.getElementById('login-general-error');
+                if(errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+            }
+        }
+
+        // ==================== FIREBASE REGISTER ====================
+        async function handleRegister(e) {
+            e.preventDefault();
+            clearRegisterErrors();
+            const name = document.getElementById('reg-fullname').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const phone = document.getElementById('reg-phone').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const confirmPassword = document.getElementById('reg-confirm-password').value;
+            const btn = document.getElementById('reg-submit-btn');
+
+            let hasError = false;
+            if (!name || name.length < 2) { showFieldError('reg-name-error', 'Please enter your full name'); hasError = true; }
+            if (!email || !email.includes('@')) { showFieldError('reg-email-error', 'Please enter a valid email'); hasError = true; }
+            if (!phone || phone.replace(/\D/g, '').length < 10) { showFieldError('reg-phone-error', 'Please enter a valid phone number'); hasError = true; }
+            if (!password || password.length < 6) { showFieldError('reg-password-error', 'Password must be at least 6 characters'); hasError = true; }
+            if (password !== confirmPassword) { showFieldError('reg-confirm-error', 'Passwords do not match'); hasError = true; }
+            if (hasError) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Creating account...';
+
+            if (!auth || !db) { showToast('Firebase not available', 'error'); btn.disabled = false; btn.innerHTML = 'Create My Account'; return; }
+
+            try {
+                const cred = await auth.createUserWithEmailAndPassword(email, password);
+                await db.collection('users').doc(cred.user.uid).set({
+                    name: name,
+                    email: email,
+                    phone: phone,
+                    role: 'user',
+                    status: 'pending',
+                    kycStatus: 'pending',
+                    balance: 0,
+                    totalDeposit: 0,
+                    totalWithdrawn: 0,
+                    totalSavings: 0,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                showToast('Account created! Welcome to TWITHA 🎉');
+                setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
+            } catch(err) {
+                btn.disabled = false;
+                btn.innerHTML = 'Create My Account';
+                let msg = 'Registration failed. Please try again.';
+                if (err.code === 'auth/email-already-in-use') msg = 'This email is already registered. Please login instead.';
+                else if (err.code === 'auth/weak-password') msg = 'Password is too weak. Please use at least 6 characters.';
+                const errEl = document.getElementById('reg-general-error');
+                if(errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+            }
+        }
+
+        // ==================== TOAST ====================
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            let colors = 'bg-emerald-600 text-white';
+            if (type === 'error') colors = 'bg-red-600 text-white';
+            if (type === 'info') colors = 'bg-slate-700 text-white';
+            toast.className = `${colors} px-6 py-4 rounded-2xl shadow-2xl text-sm font-medium pointer-events-auto max-w-sm text-center`;
+            toast.textContent = msg;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.transition = 'all 0.3s'; toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        // ==================== STATS ANIMATION ====================
+        function animateStats() {
+            document.querySelectorAll('.stat-number').forEach(stat => {
+                const target = parseInt(stat.getAttribute('data-target') || '0');
+                const suffix = stat.getAttribute('data-suffix') || '';
+                if (!target) return;
+                let current = 0;
+                const increment = target / (1400 / 16);
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) { stat.textContent = target.toLocaleString() + suffix; clearInterval(timer); }
+                    else { stat.textContent = Math.floor(current).toLocaleString() + suffix; }
+                }, 16);
+            });
+        }
+
+        // ==================== INIT ====================
+        window.onload = function() {
+            // Back to top
+            window.addEventListener('scroll', () => {
+                const btn = document.getElementById('back-to-top');
+                if (btn) { window.scrollY > 450 ? btn.classList.add('show') : btn.classList.remove('show'); }
+            });
+            setTimeout(animateStats, 900);
+            // Init FAQ states
+            document.querySelectorAll('.faq-answer').forEach(el => { el.style.maxHeight = '0'; el.style.paddingTop = '0'; el.style.paddingBottom = '0'; });
+            document.querySelectorAll('.faq-question').forEach(q => {
+                q.setAttribute('tabindex', '0');
+                q.addEventListener('keydown', function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleFAQ(this); } });
+            });
+        };
+    </script>
+</body>
+</html>
