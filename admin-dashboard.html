@@ -1,39 +1,325 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TWITHA • Admin Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
-<style>
-  *{box-sizing:border-box;}
-  body{font-family:'Inter',system-ui,sans-serif;background:#0f0a1f;color:#e2e8f0;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
-  .heading-font{font-family:'Space Grotesk','Inter',sans-serif;font-weight:600;letter-spacing:-0.025em;}
-  .glass{background:rgba(30,20,60,0.95);border:1px solid rgba(124,58,237,0.2);backdrop-filter:blur(12px);}
-  .section{display:none;}.section.active{display:block;}
-  .nav-item{padding:0.625rem 1rem;border-radius:1rem;cursor:pointer;transition:all 0.15s;color:#a5b4fc;font-size:0.875rem;}
-  .nav-item:hover{background:rgba(124,58,237,0.12);color:#ddd6fe;}
-  .nav-item.active{background:rgba(124,58,237,0.2);color:#c084fc;font-weight:600;}
-  .badge{font-size:0.7rem;font-weight:700;padding:0.2rem 0.65rem;border-radius:9999px;}
-  .badge-green{background:#064e3b;color:#6ee7b7;}.badge-amber{background:#78350f;color:#fcd34d;}
-  .badge-red{background:#7f1d1d;color:#fca5a5;}.badge-blue{background:#1e3a5f;color:#93c5fd;}
-  .badge-sky{background:#0c4a6e;color:#7dd3fc;}
-  .badge-count{background:#ef4444;color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:9999px;font-weight:700;}
-  .modal-wrap{animation:modalPop 0.22s ease forwards;}
-  @keyframes modalPop{from{transform:scale(0.95);opacity:0;}to{transform:scale(1);opacity:1;}}
-  .input-admin{width:100%;background:#2a1f4a;border:1px solid #4c1d95;padding:0.65rem 1rem;border-radius:0.875rem;font-size:0.875rem;color:#e2e8f0;outline:none;transition:border-color 0.2s;}
-  .input-admin:focus{border-color:#7c3aed;}
-  .input-admin::placeholder{color:#6b48b0;}
-  select.input-admin option{background:#1e143c;}
-  .spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;vertical-align:middle;}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TWITHA - Admin Control Panel</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans antialiased">
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar Shell -->
+        <div class="w-64 bg-gray-950 border-r border-gray-800 flex flex-col justify-between">
+            <div class="p-5">
+                <div class="flex items-center gap-3 mb-8 cursor-pointer" onclick="switchAdminTab('metrics')">
+                    <div class="h-9 w-9 bg-teal-500 rounded-lg flex items-center justify-center font-bold text-black text-xl">T</div>
+                    <span class="text-xl font-black tracking-wider text-teal-400">TWITHA HQ</span>
+                </div>
+                <nav class="space-y-2">
+                    <button onclick="switchAdminTab('metrics')" class="adm-tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-teal-500 text-black font-semibold transition"><i class="fa-solid fa-gauge w-5"></i>Core Dashboard</button>
+                    <button onclick="switchAdminTab('users-panel')" class="adm-tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-gray-900 transition"><i class="fa-solid fa-users w-5"></i>User Management</button>
+                    <button onclick="switchAdminTab('cms-panel')" class="adm-tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-gray-900 transition"><i class="fa-solid fa-window-restore w-5"></i>Website CMS Editor</button>
+                </nav>
+            </div>
+            <div class="p-5 border-t border-gray-800">
+                <button onclick="adminLogout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-950/20 transition font-medium"><i class="fa-solid fa-sign-out w-5"></i>Exit Console</button>
+            </div>
+        </div>
+
+        <!-- Working Terminal Workspace Container -->
+        <div class="flex-1 flex flex-col overflow-y-auto bg-gray-900">
+            <header class="bg-gray-950/50 backdrop-blur border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+                <h1 id="admin-page-title" class="text-xl font-bold text-white">Core Dashboard</h1>
+                <span class="text-xs bg-teal-950 text-teal-400 border border-teal-800/60 px-3 py-1 rounded-full font-mono">System Root Operator</span>
+            </header>
+
+            <main class="p-6 max-w-6xl w-full mx-auto space-y-6">
+
+                <!-- Tab: Core Metrics Summary View -->
+                <div id="adm-tab-metrics" class="adm-tab-content space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-gray-950 p-6 border border-gray-800 rounded-2xl">
+                            <p class="text-xs text-gray-400 font-medium uppercase tracking-wider mb-1">Total System Liquidity Balance</p>
+                            <h2 id="metric-total-cash" class="text-2xl font-black text-white">₦0.00</h2>
+                        </div>
+                        <div class="bg-gray-950 p-6 border border-gray-800 rounded-2xl">
+                            <p class="text-xs text-gray-400 font-medium uppercase tracking-wider mb-1">Registered Users Pipeline</p>
+                            <h2 id="metric-total-users" class="text-2xl font-black text-teal-400">0 Accounts</h2>
+                        </div>
+                        <div class="bg-gray-950 p-6 border border-gray-800 rounded-2xl">
+                            <p class="text-xs text-gray-400 font-medium uppercase tracking-wider mb-1">Unprocessed Transaction Claims</p>
+                            <h2 id="metric-pending-tx" class="text-2xl font-black text-yellow-500">0 Items</h2>
+                        </div>
+                    </div>
+
+                    <!-- Deposit Claims Review Board -->
+                    <div class="bg-gray-950 border border-gray-800 rounded-2xl p-6">
+                        <h3 class="text-lg font-bold text-white mb-4">Manual Deposit Claims Processing Runway</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="border-b border-gray-800 text-gray-400 font-medium">
+                                        <th class="pb-3 px-2">Account ID / User</th>
+                                        <th class="pb-3 px-2">Amount Ledger Input</th>
+                                        <th class="pb-3 px-2">Provided Verification Context</th>
+                                        <th class="pb-3 px-2 text-right">Actions Workflow</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="claims-table-body" class="divide-y divide-gray-900 text-gray-300">
+                                    <tr>
+                                        <td colspan="4" class="py-4 text-center text-gray-500">Parsing network database lines...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: User Management List Layout Panel -->
+                <div id="adm-tab-users-panel" class="adm-tab-content hidden space-y-6">
+                    <div class="bg-gray-950 border border-gray-800 rounded-2xl p-6">
+                        <h3 class="text-lg font-bold text-white mb-4">User Registry Roll</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="border-b border-gray-800 text-gray-400">
+                                        <th class="pb-3 px-2">Profile Email / Name</th>
+                                        <th class="pb-3 px-2">Phone / Occupation</th>
+                                        <th class="pb-3 px-2">Settlement Bank Locks</th>
+                                        <th class="pb-3 px-2">Balance Ledger</th>
+                                        <th class="pb-3 px-2 text-right">Actions Override</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body" class="divide-y divide-gray-900 text-gray-300">
+                                    <!-- Populated dynamically via JS arrays -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Live CMS Control Editor View -->
+                <div id="adm-tab-cms-panel" class="adm-tab-content hidden space-y-6">
+                    <div class="bg-gray-950 border border-gray-800 rounded-2xl p-6 max-w-xl mx-auto">
+                        <h2 class="text-xl font-bold mb-2 text-white">Dynamic Website CMS Engine</h2>
+                        <p class="text-gray-400 text-sm mb-6">Modify system-wide values, tickers, and content blocks. Updates deploy universally instantly down to matching user dashboards.</p>
+                        
+                        <form id="cms-editor-form" onsubmit="handleCmsSave(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Global Header Announcement Ticker Text</label>
+                                <input type="text" id="cms-ticker-field" class="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-teal-500" placeholder="e.g. System upgrade scheduled for tonight at 12:00 AM WAT.">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Corporate Brand Platform Subtitle Notice</label>
+                                <textarea id="cms-brand-subtitle" rows="3" class="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-teal-500" placeholder="Custom text parameters..."></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-teal-500 text-black font-bold py-3 px-4 rounded-xl hover:bg-teal-400 transition">Broadcast CMS Engine Updates</button>
+                        </form>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Script Operations Framework Block Context -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // Enforce Basic Route Authentication Checks
+        auth.onAuthStateChanged(user => {
+            if(!user) {
+                window.location.href = 'login.html';
+            } else {
+                initOperationalMetricsSync();
+                initCmsEngineFields();
+            }
+        });
+
+        // Tab Switching Mechanics
+        function switchAdminTab(target) {
+            document.querySelectorAll('.adm-tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.adm-tab-btn').forEach(b => {
+                b.classList.remove('bg-teal-500','text-black','font-semibold');
+                b.classList.add('text-gray-400','hover:bg-gray-900');
+            });
+
+            document.getElementById(`adm-tab-${target}`).classList.remove('hidden');
+            if(event.currentTarget && event.currentTarget.classList.contains('adm-tab-btn')) {
+                event.currentTarget.classList.add('bg-teal-500','text-black','font-semibold');
+                event.currentTarget.classList.remove('text-gray-400','hover:bg-gray-900');
+            }
+            document.getElementById('admin-page-title').innerText = target.replace('-', ' ').toUpperCase();
+        }
+
+        // Live Operational Database Synchronizer Pipeline
+        function initOperationalMetricsSync() {
+            // Aggregate user values metrics monitoring
+            db.collection('users').onSnapshot(snapshot => {
+                document.getElementById('metric-total-users').innerText = `${snapshot.size} Accounts`;
+                let netLiquidity = 0;
+                
+                const userTableBody = document.getElementById('users-table-body');
+                userTableBody.innerHTML = '';
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const bal = data.balance || 0;
+                    netLiquidity += parseFloat(bal);
+
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-gray-900 hover:bg-gray-950/40 transition";
+                    tr.innerHTML = `
+                        <td class="py-3 px-2 font-medium">
+                            <div class="text-white font-bold">${data.name || 'No Name Input'}</div>
+                            <div class="text-xs text-gray-500 font-mono">${doc.id}</div>
+                        </td>
+                        <td class="py-3 px-2 text-xs">
+                            <div>${data.phone || 'N/A'}</div>
+                            <div class="text-gray-500">${data.occupation || 'N/A'}</div>
+                        </td>
+                        <td class="py-3 px-2 text-xs font-mono">
+                            <div class="text-gray-300 font-bold">${data.bankName || '⚠️ Unconfigured'}</div>
+                            <div class="text-gray-500">${data.accountNumber || ''}</div>
+                        </td>
+                        <td class="py-3 px-2 font-bold text-teal-400">₦${parseFloat(bal).toLocaleString()}</td>
+                        <td class="py-3 px-2 text-right">
+                            <button onclick="overrideUserBalance('${doc.id}', ${bal})" class="text-xs bg-gray-800 text-gray-200 px-2 py-1 rounded hover:bg-teal-500 hover:text-black transition mr-1"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="purgeUserRecord('${doc.id}')" class="text-xs bg-red-950/40 text-red-400 border border-red-900/60 px-2 py-1 rounded hover:bg-red-500 hover:text-black transition"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    `;
+                    userTableBody.appendChild(tr);
+                });
+
+                document.getElementById('metric-total-cash').innerText = `₦${netLiquidity.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            });
+
+            // Handle Deposit Claims Rendering and Processing Core Logic Pipeline
+            db.collection('transactions').onSnapshot(snapshot => {
+                let unverifiedClaimsCount = 0;
+                const claimsTable = document.getElementById('claims-table-body');
+                claimsTable.innerHTML = '';
+
+                snapshot.forEach(doc => {
+                    const tx = doc.data();
+                    if(tx.status === 'Pending Verification' || tx.status === 'pending') {
+                        unverifiedClaimsCount++;
+                        
+                        const tr = document.createElement('tr');
+                        tr.className = "border-b border-gray-900 text-xs";
+                        tr.innerHTML = `
+                            <td class="py-3 px-2">
+                                <span class="font-bold text-white block">${tx.userEmail || 'Client Entry'}</span>
+                                <span class="text-gray-500 font-mono">${doc.id}</span>
+                            </td>
+                            <td class="py-3 px-2 text-sm font-black text-teal-400">₦${parseFloat(tx.amount || 0).toLocaleString()}</td>
+                            <td class="py-3 px-2 text-gray-400">
+                                <div>Bank: <strong>${tx.bankNameInput || 'N/A'}</strong></div>
+                                <div>Holder: <strong>${tx.accountNameInput || 'N/A'}</strong></div>
+                            </td>
+                            <td class="py-3 px-2 text-right space-x-1">
+                                <button onclick="processClaimAction('${doc.id}', '${tx.userId}', ${tx.amount}, 'approve')" class="bg-emerald-500 text-black font-bold px-3 py-1 rounded hover:bg-emerald-400 transition"><i class="fa-solid fa-check"></i> Accept</button>
+                                <button onclick="processClaimAction('${doc.id}', '${tx.userId}', ${tx.amount}, 'reject')" class="bg-red-950 text-red-400 border border-red-900 font-medium px-2 py-1 rounded hover:bg-red-500 hover:text-black transition"><i class="fa-solid fa-times"></i></button>
+                            </td>
+                        `;
+                        claimsTable.appendChild(tr);
+                    }
+                });
+
+                document.getElementById('metric-pending-tx').innerText = `${unverifiedClaimsCount} Items`;
+                if(unverifiedClaimsCount === 0) {
+                    claimsTable.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-gray-500">No manual verification claims currently pending in pipeline runway.</td></tr>`;
+                }
+            });
+        }
+
+        // Action Core Execution Workflow
+        async function processClaimAction(txId, userId, amount, action) {
+            try {
+                if(action === 'approve') {
+                    const userRef = db.collection('users').doc(userId);
+                    await db.runTransaction(async (transaction) => {
+                        const userDoc = await transaction.get(userRef);
+                        const currentBalance = userDoc.exists ? (userDoc.data().balance || 0) : 0;
+                        transaction.update(userRef, { balance: currentBalance + parseFloat(amount) });
+                    });
+                    await db.collection('transactions').doc(txId).update({ status: 'approved' });
+                    alert("Deposit transaction matched. Balance allocated instantly to wallet profile path.");
+                } else {
+                    await db.collection('transactions').doc(txId).update({ status: 'rejected' });
+                    alert("Claim rejected and removed from operational dashboard pipelines.");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Workflow engine fault updating transaction lifecycle.");
+            }
+        }
+
+        async function overrideUserBalance(uid, oldBal) {
+            const freshAmt = prompt("Enter complete new total balance amount for user asset line (₦):", oldBal);
+            if(freshAmt !== null && !isNaN(freshAmt)) {
+                await db.collection('users').doc(uid).set({ balance: parseFloat(freshAmt) }, { merge: true });
+                alert("Balance updated inside user's system ledger tracking module.");
+            }
+        }
+
+        async function purgeUserRecord(uid) {
+            if(confirm("Confirm security override to delete user documentation file entry permanently? This action cannot be undone.")) {
+                await db.collection('users').doc(uid).delete();
+                alert("Account file trace purged cleanly.");
+            }
+        }
+
+        // Live Website Text Configuration CMS Sync Handler Engine
+        function initCmsEngineFields() {
+            db.collection('siteSettings').doc('global').get().then(doc => {
+                if(doc.exists) {
+                    const d = doc.data();
+                    document.getElementById('cms-ticker-field').value = d.noticeText || '';
+                    document.getElementById('cms-brand-subtitle').value = d.brandSubtitle || '';
+                }
+            }).catch(()=>{});
+        }
+
+        async function handleCmsSave(e) {
+            e.preventDefault();
+            const text = document.getElementById('cms-ticker-field').value;
+            const sub = document.getElementById('cms-brand-subtitle').value;
+
+            try {
+                await db.collection('siteSettings').doc('global').set({
+                    noticeText: text,
+                    brandSubtitle: sub,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                alert("Live updates pushed to public database channels cleanly.");
+            } catch(err) {
+                alert("Failure syncing data changes to site configuration layout paths.");
+            }
+        }
+
+        function adminLogout() {
+            auth.signOut().then(() => { window.location.href = 'login.html'; });
+        }
+    </script>
+</body>
+</html>
   @keyframes spin{to{transform:rotate(360deg);}}
   .loading-overlay{position:fixed;inset:0;background:#0f0a1f;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;}
   .scrollable-table{overflow-x:auto;overflow-y:auto;border-radius:1rem;scrollbar-width:thin;scrollbar-color:#7c3aed #1e143c;}
